@@ -20,7 +20,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       channel: new ChannelService(),
       score: {},
       subscriptions: [],
-      topic: 'match:Twins+Mets',
+      topic: 'contest:consumer:mine',
       username: ''
     };
 

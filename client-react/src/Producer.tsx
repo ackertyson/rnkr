@@ -28,13 +28,13 @@ export class Producer extends React.Component<Props, State> {
 
   addPointFor(name: string): ButtonHandler {
     return () => this.state.channel.send(
-      this.state.topic, 'add_point', { team: name }, this.onAddPointSuccessFor(name)
+      this.state.topic, 'add_score', { name: name }, this.onAddPointSuccessFor(name)
     );
   }
 
-  createGame(teams: any, topic: string): void {
+  createGame(name: string, contestants: string[], topic: string): void {
     this.state.channel.send(
-      topic, 'new_match', teams, this.onCreateSuccessFor(teams)
+      topic, 'create', { name, contestants }, this.onCreateSuccessFor(name)
     );
   }
 
@@ -42,8 +42,8 @@ export class Producer extends React.Component<Props, State> {
     return () => console.log(`Added point for ${name}`);
   }
 
-  onCreateSuccessFor(teams: any): () => void {
-    return () => console.log(`Created match for ${teams.teamA} + ${teams.teamB}`);
+  onCreateSuccessFor(name: any): () => void {
+    return () => console.log(`Created contest '${name}'`);
   }
 
   render() {
@@ -55,11 +55,12 @@ export class Producer extends React.Component<Props, State> {
   }
 
   selectTeams(): void {
-    const teams = { teamA: 'Twins', teamB: 'Mets', sport: 'Baseball' };
-    const topic = 'match:Twins+Mets';
+    const contestants = ['Twins', 'Mets'];
+    const topic = 'contest:mine';
+    const name = 'mine';
     this.setState({ topic });
     this.state.channel.open(topic, { username: this.state.username });
-    this.createGame(teams, topic);
+    this.createGame(name, contestants, topic);
   }
 }
 

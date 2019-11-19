@@ -11,6 +11,23 @@ defmodule RnkrInterfaceWeb.ConsumerChannel do
     {:ok, socket}
   end
 
+  def handle_in("add_score", %{"name" => contestant_name}, socket) do
+    "contest:" <> name = socket.topic
+
+    case Contest.cast_vote(via(name), contestant_name) do
+      {:ok, score} ->
+        broadcast!(socket, "score_change", score)
+        {:reply, :ok, socket}
+
+      {:error, reason} ->
+        {:reply, {:error, %{reason: inspect(reason)}}, socket}
+    end
+  end
+
+  def handle_in("add_score", _payload, socket) do
+    {:reply, {:error, %{reason: "422 Unprocessable Entity"}}, socket}
+  end
+
   def handle_in("get_scores", _payload, socket) do
     [_, _, name] = String.split(socket.topic, ":")
     score = Contest.get_scores(via(name))
