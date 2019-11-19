@@ -5,7 +5,7 @@ defmodule RnkrInterfaceWeb.ModeratorChannel do
   alias RnkrInterfaceWeb.Presence
 
   def join(channel, %{"username" => username}, socket) do
-    [type, name] = String.split(channel, ":")
+    [_, type, name] = String.split(channel, ":")
     send(self(), {:after_join, {username, type, name}})
     {:ok, socket}
   end

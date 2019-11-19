@@ -58,7 +58,7 @@ defmodule Rnkr.Contest do
 
   def calculate_scores(contestants) do
     for {name, %Contestant{score: score}} <- Map.to_list(contestants),
-        do: {name, score}
+        do: %{name => score}
   end
 
   def via_tuple(name), do: {:via, Registry, {Registry.Rnkr, name}}

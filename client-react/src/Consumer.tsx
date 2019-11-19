@@ -20,7 +20,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       channel: new ChannelService(),
       score: {},
       subscriptions: [],
-      topic: 'contest:consumer:mine',
+      topic: 'contest:voter:mine',
       username: ''
     };
 
@@ -37,7 +37,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
 
   getScore(): void {
     this.state.channel.send(
-      this.state.topic, 'get_score', null, this.onScoreUpdate.bind(this)
+      this.state.topic, 'get_scores', null, this.onScoreUpdate.bind(this)
     );
   }
 

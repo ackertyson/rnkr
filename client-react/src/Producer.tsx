@@ -55,8 +55,8 @@ export class Producer extends React.Component<Props, State> {
   }
 
   selectTeams(): void {
-    const contestants = ['Twins', 'Mets'];
-    const topic = 'contest:mine';
+    const contestants = ['A', 'B', 'C', 'D'];
+    const topic = 'contest:moderator:mine';
     const name = 'mine';
     this.setState({ topic });
     this.state.channel.open(topic, { username: this.state.username });

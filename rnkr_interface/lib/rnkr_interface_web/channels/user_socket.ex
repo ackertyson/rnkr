@@ -2,7 +2,8 @@ defmodule RnkrInterfaceWeb.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  channel "contest:consumer:*", RnkrInterfaceWeb.VoterChannel
+  channel("contest:moderator:*", RnkrInterfaceWeb.ModeratorChannel)
+  channel("contest:voter:*", RnkrInterfaceWeb.VoterChannel)
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

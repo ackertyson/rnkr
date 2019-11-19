@@ -1,4 +1,4 @@
-defmodule RnkrInterfaceWeb.ConsumerChannel do
+defmodule RnkrInterfaceWeb.VoterChannel do
   use RnkrInterfaceWeb, :channel
 
   alias Rnkr.Contest

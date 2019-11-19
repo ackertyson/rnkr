@@ -11,7 +11,8 @@ defmodule RnkrInterface.Application do
       # Start the Ecto repository
       RnkrInterface.Repo,
       # Start the endpoint when the application starts
-      RnkrInterfaceWeb.Endpoint
+      RnkrInterfaceWeb.Endpoint,
+      RnkrInterfaceWeb.Presence
       # Starts a worker by calling: RnkrInterface.Worker.start_link(arg)
       # {RnkrInterface.Worker, arg},
     ]
