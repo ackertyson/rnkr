@@ -13,7 +13,8 @@ defmodule Rnkr.Contest do
   def start_link(name, contestant_names) do
     contestants =
       Enum.reduce(contestant_names, %{}, fn contestant_name, acc ->
-        Map.put(acc, contestant_name, %Contestant{name: contestant_name, score: 0})
+        {:ok, contestant} = Contestant.new(contestant_name)
+        Map.put(acc, contestant_name, contestant)
       end)
 
     GenStateMachine.start_link(
@@ -25,10 +26,16 @@ defmodule Rnkr.Contest do
   end
 
   def init({name, contestants}) do
-    {:ok, :preparing, %{contest: %Contest{name: name, contestants: contestants}, voters: []}}
+    {:ok, contest} = Contest.new(name, contestants)
+    {:ok, :preparing, %{contest: contest, voters: []}}
   end
 
   ### PUBLIC INTERFACE
+
+  @spec new(String.t(), nonempty_list(Rnkr.Contestant.t())) :: {:ok, Rnkr.Contest.t()}
+  def new(name, contestants) do
+    {:ok, %Contest{name: name, contestants: contestants}}
+  end
 
   def open_voting(pid) do
     GenStateMachine.cast(pid, :begin)
@@ -54,26 +61,28 @@ defmodule Rnkr.Contest do
     GenStateMachine.cast(pid, :end)
   end
 
+  def via_tuple(name), do: {:via, Registry, {Registry.Rnkr, name}}
+
   ### PRIVATE METHODS
 
-  def calculate_scores(contestants) do
+  defp calculate_scores(contestants) do
     Enum.reduce(Map.values(contestants), %{}, fn %Contestant{name: name, score: score}, acc ->
       Map.put(acc, name, score)
     end)
   end
 
-  def record_vote(
-        from,
-        contestant_name,
-        %{contest: %{contestants: contestants} = contest} = data
-      ) do
+  defp record_vote(
+         {pid, _} = from,
+         contestant_name,
+         %{contest: %{contestants: contestants} = contest} = data
+       ) do
     case Map.has_key?(contestants, contestant_name) do
       true ->
         contestant = contestants[contestant_name]
 
         new_contestants = %{
           contestants
-          | contestant_name => Contestant.add_score(contestant)
+          | contestant_name => Contestant.put_vote(contestant, pid)
         }
 
         new_contest = %{contest | contestants: new_contestants}
@@ -83,8 +92,6 @@ defmodule Rnkr.Contest do
         {:keep_state_and_data, [{:reply, from, {:error, {:reason, "No such contestant"}}}]}
     end
   end
-
-  def via_tuple(name), do: {:via, Registry, {Registry.Rnkr, name}}
 
   ### EVENT CALLBACKS
 
