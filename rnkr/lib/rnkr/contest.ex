@@ -57,8 +57,31 @@ defmodule Rnkr.Contest do
   ### PRIVATE METHODS
 
   def calculate_scores(contestants) do
-    for {name, %Contestant{score: score}} <- Map.to_list(contestants),
-        do: %{name => score}
+    Enum.reduce(Map.values(contestants), %{}, fn %Contestant{name: name, score: score}, acc ->
+      Map.put(acc, name, score)
+    end)
+  end
+
+  def record_vote(
+        from,
+        contestant_name,
+        %{contest: %{contestants: contestants} = contest} = data
+      ) do
+    case Map.has_key?(contestants, contestant_name) do
+      true ->
+        contestant = contestants[contestant_name]
+
+        new_contestants = %{
+          contestants
+          | contestant_name => Contestant.add_score(contestant)
+        }
+
+        new_contest = %{contest | contestants: new_contestants}
+        {:keep_state, %{data | contest: new_contest}, [{:reply, from, :ok}]}
+
+      _ ->
+        {:keep_state_and_data, [{:reply, from, {:error, {:reason, "No such contestant"}}}]}
+    end
   end
 
   def via_tuple(name), do: {:via, Registry, {Registry.Rnkr, name}}
@@ -74,39 +97,28 @@ defmodule Rnkr.Contest do
   end
 
   def voting({:call, {pid, _} = from}, :join, %{voters: voters} = data) do
-    if Enum.member?(voters, pid) do
-      {:keep_state_and_data, [{:reply, from, voters}]}
-    else
-      new_data = %{data | voters: [pid | voters]}
-      {:keep_state, new_data, [{:reply, from, :ok}]}
+    case Enum.member?(voters, pid) do
+      true ->
+        {:keep_state_and_data, [{:reply, from, :ok}]}
+
+      _ ->
+        new_data = %{data | voters: [pid | voters]}
+        {:keep_state, new_data, [{:reply, from, :ok}]}
     end
   end
 
   def voting(
         {:call, {pid, _} = from},
         {:vote, contestant_name},
-        %{
-          contest: %{contestants: contestants} = contest,
-          voters: voters
-        } = data
+        %{voters: voters} = data
       ) do
-    if Enum.member?(voters, pid) do
-      if Map.has_key?(contestants, contestant_name) do
-        contestant = contestants[contestant_name]
+    case Enum.member?(voters, pid) do
+      true ->
+        record_vote(from, contestant_name, data)
 
-        new_contestants = %{
-          contestants
-          | contestant_name => Contestant.add_score(contestant)
-        }
-
-        new_contest = %{contest | contestants: new_contestants}
-        {:keep_state, %{data | contest: new_contest}, [{:reply, from, :ok}]}
-      else
-        {:keep_state, data, [{:reply, from, :ok}]}
-      end
-    else
-      {:keep_state_and_data,
-       [{:reply, from, {:error, {:reason, "You must join the event before voting"}}}]}
+      _ ->
+        {:keep_state_and_data,
+         [{:reply, from, {:error, {:reason, "You must join the event before voting"}}}]}
     end
   end
 
