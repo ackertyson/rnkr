@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ButtonHandler } from './types';
+import { InputEvent, Score } from './types';
 import ChannelService from './channel.service';
 import ProducerPage from './ProducerPage';
 
@@ -8,7 +8,9 @@ export interface Props {}
 export interface State {
   channel: ChannelService;
   topic: string;
+  contest: string;
   username: string;
+  score: Score;
 }
 
 export class Producer extends React.Component<Props, State> {
@@ -17,50 +19,64 @@ export class Producer extends React.Component<Props, State> {
 
     this.state = {
       channel: new ChannelService(),
+      contest: '',
       topic: '',
-      username: 'admin1'
+      username: 'admin1',
+      score: {}
     };
 
-    this.addPointFor = this.addPointFor.bind(this);
-    this.createGame = this.createGame.bind(this);
-    this.selectTeams = this.selectTeams.bind(this);
+    this.sendCreateContest = this.sendCreateContest.bind(this);
+    this.handleInputChange = this.handleInputChange.bind(this);
+    this.onScoreChange = this.onScoreChange.bind(this);
+    this.updateScore = this.updateScore.bind(this);
+    this.createContest = this.createContest.bind(this);
   }
 
-  addPointFor(name: string): ButtonHandler {
-    return () => this.state.channel.send(
-      this.state.topic, 'add_score', { name: name }, this.onAddPointSuccessFor(name)
-    );
+  createContest(): void {
+    const contestants = ['A', 'B', 'C', 'D'];
+    const name = this.state.contest;
+    const topic = `contest:moderator:${name}`;
+    this.setState({ topic });
+    this.state.channel.open(topic, { username: this.state.username });
+    this.sendCreateContest(name, contestants, topic);
   }
 
-  createGame(name: string, contestants: string[], topic: string): void {
+  sendCreateContest(name: string, contestants: string[], topic: string): void {
     this.state.channel.send(
       topic, 'create', { name, contestants }, this.onCreateSuccessFor(name)
     );
+
+    this.state.channel.subscribe(
+      topic || this.state.topic, 'score_change', this.onScoreChange.bind(this)
+    );
   }
 
-  onAddPointSuccessFor(name: string): () => void {
-    return () => console.log(`Added point for ${name}`);
+  handleInputChange(event: InputEvent): void {
+    const { name, value } = event.target;
+    this.setState({ [name]: value } as unknown as Pick<State, keyof State>);
   }
 
   onCreateSuccessFor(name: any): () => void {
     return () => console.log(`Created contest '${name}'`);
   }
 
-  render() {
-    return (
-      <ProducerPage
-        addPointFor={this.addPointFor}
-        selectTeams={this.selectTeams}/>
+  onScoreChange(score: Score): void {
+    this.state.channel.send(
+      this.state.topic, 'get_scores', null, this.updateScore
     );
   }
 
-  selectTeams(): void {
-    const contestants = ['A', 'B', 'C', 'D'];
-    const topic = 'contest:moderator:mine';
-    const name = 'mine';
-    this.setState({ topic });
-    this.state.channel.open(topic, { username: this.state.username });
-    this.createGame(name, contestants, topic);
+  render() {
+    return (
+      <ProducerPage
+        onChange={this.handleInputChange}
+        createContest={this.createContest}
+        score={this.state.score}/>
+    );
+  }
+
+  updateScore(score: Score) {
+    this.setState({ score });
   }
 }
 

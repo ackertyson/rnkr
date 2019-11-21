@@ -64,8 +64,6 @@ export class ChannelService {
     }
 
     this.channels[topic].on(event, onData);
-    // unsubscribe function for use in component ngOnDestroy()
-    // return () => this.channels[topic].off(event, onData);
     return () => this.channels[topic].off(event);
   }
 }

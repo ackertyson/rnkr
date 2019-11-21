@@ -1,25 +1,33 @@
 import * as React from 'react';
-import { ButtonHandler } from './types';
+import { ButtonHandler, InputHandler, Score } from './types';
 
 export interface Props {
-  addPointFor: (teamName: string) => ButtonHandler;
-  selectTeams: ButtonHandler;
+  onChange: InputHandler;
+  createContest: ButtonHandler;
+  score: Score;
 }
 
 export function ProducerPage(props: Props) {
+  const scores = Object.keys(props.score).map(k => {
+    return (<li key={k}>{k}: {props.score[k]}</li>);
+  });
+
   return (
     <section>
       <h2>Producer</h2>
 
-      <button type="button" onClick={props.selectTeams}>
-        New game
+      Contest name:
+      <input type="text"
+        name="contest"
+        onChange={props.onChange}/>
+      <button type="button" onClick={props.createContest}>
+        New contest
       </button>
-      <button type="button" onClick={props.addPointFor('Twins')}>
-        Add point (Twins)
-      </button>
-      <button type="button" onClick={props.addPointFor('Mets')}>
-        Add point (Mets)
-      </button>
+
+      <h2>Scores</h2>
+      <ul>
+        {scores}
+      </ul>
     </section>
   );
 }

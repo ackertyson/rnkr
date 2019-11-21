@@ -1,15 +1,17 @@
 import * as React from 'react';
 import ChannelService from './channel.service';
 import ConsumerPage from './ConsumerPage';
-import { InputEvent, FormContainer, Score } from './types';
+import { ButtonHandler, InputEvent, FormContainer, Score } from './types';
 
 export interface Props {}
 
 export interface State {
   channel: ChannelService;
-  score: Score,
-  subscriptions: Function[],
+  score: Score;
+  subscriptions: Function[];
   topic: string;
+  contest: string;
+  contestants: {[key: string]: string};
   username: string;
 }
 
@@ -20,25 +22,30 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       channel: new ChannelService(),
       score: {},
       subscriptions: [],
-      topic: 'contest:voter:mine',
+      topic: '',
+      contest: '',
+      contestants: {},
       username: ''
     };
 
-    this.getScore = this.getScore.bind(this);
+    this.castVoteFor = this.castVoteFor.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
-    this.onScoreUpdate = this.onScoreUpdate.bind(this);
-    this.watchGame = this.watchGame.bind(this);
-    this.selectGame = this.selectGame.bind(this);
+    this.joinContest = this.joinContest.bind(this);
+    this.setContestants = this.setContestants.bind(this);
   }
 
   componentWillUnmount() {
     this.state.subscriptions.forEach((unsub: Function) => unsub());
   }
 
-  getScore(): void {
-    this.state.channel.send(
-      this.state.topic, 'get_scores', null, this.onScoreUpdate.bind(this)
+  castVoteFor(name: string): ButtonHandler {
+    return () => this.state.channel.send(
+      this.state.topic, 'cast_vote', { name: name }, this.onCastVoteSuccessFor(name)
     );
+  }
+
+  onCastVoteSuccessFor(name: string): () => void {
+    return () => console.log(`Cast vote for ${name}`);
   }
 
   handleInputChange(event: InputEvent): void {
@@ -46,8 +53,14 @@ export class Consumer extends React.Component<Props, State> implements FormConta
     this.setState({ [name]: value } as unknown as Pick<State, keyof State>);
   }
 
-  onScoreUpdate(score: Score): void {
-    this.setState({ score });
+  joinContest(): void {
+    if (!this.state.contest) throw new Error('Enter a contest name!');
+    if (!this.state.username) throw new Error('Enter your name!');
+    const topic = `contest:voter:${this.state.contest}`;
+    this.setState({ topic });
+
+    this.state.channel.open(topic, { username: this.state.username });
+    this.state.channel.send(topic, 'get_contestants', null, this.setContestants);
   }
 
   render() {
@@ -55,25 +68,16 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       <ConsumerPage
         onChange={this.handleInputChange}
         score={this.state.score}
+        contest={this.state.contest}
+        contestants={this.state.contestants}
         username={this.state.username}
-        selectGame={this.selectGame}/>
+        joinContest={this.joinContest}
+        castVoteFor={this.castVoteFor}/>
     );
   }
 
-  selectGame(): void {
-    if (!this.state.username) throw new Error('Sign in first!');
-
-    this.setState({ score: { 'Twins': 0, 'Mets': 0 } });
-    this.state.channel.open(this.state.topic, { username: this.state.username });
-    this.watchGame();
-  }
-
-  watchGame(): void {
-    const unsubscribe = this.state.channel.subscribe(
-      this.state.topic, 'score_change', this.getScore.bind(this)
-    );
-    this.state.subscriptions.push(unsubscribe);
-    this.getScore();
+  setContestants(contestants: any) {
+    this.setState({ contestants });
   }
 }
 

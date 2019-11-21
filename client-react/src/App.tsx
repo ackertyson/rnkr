@@ -11,10 +11,10 @@ function App() {
         <header className="App-header">
           <ul>
             <li>
-              <Link to="/consumer">Consumer</Link>
+              <Link to="/producer">Producer</Link>
             </li>
             <li>
-              <Link to="/producer">Producer</Link>
+              <Link to="/consumer">Consumer</Link>
             </li>
           </ul>
         </header>

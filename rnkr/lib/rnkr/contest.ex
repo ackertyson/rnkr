@@ -10,6 +10,7 @@ defmodule Rnkr.Contest do
 
   @timeout 150_000
 
+  @spec start_link(String.t(), nonempty_list(String.t())) :: :ignore | {:error, any} | {:ok, pid}
   def start_link(name, contestant_names) do
     contestants =
       Enum.reduce(contestant_names, %{}, fn contestant_name, acc ->
@@ -103,7 +104,11 @@ defmodule Rnkr.Contest do
     handle_event(event_type, event_content, data)
   end
 
-  def voting({:call, {pid, _} = from}, :join, %{voters: voters} = data) do
+  def voting(
+        {:call, {pid, _} = from},
+        :join,
+        %{voters: voters} = data
+      ) do
     case Enum.member?(voters, pid) do
       true ->
         {:keep_state_and_data, [{:reply, from, :ok}]}
@@ -145,11 +150,7 @@ defmodule Rnkr.Contest do
 
   ## VOTE outside of VOTING state
 
-  def handle_event(
-        {:call, from},
-        {:vote, _},
-        _
-      ) do
+  def handle_event({:call, from}, {:vote, _}, _) do
     {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Voting is closed"}}}]}
   end
 
@@ -160,7 +161,7 @@ defmodule Rnkr.Contest do
         :get_scores,
         %{contest: %{contestants: contestants}}
       ) do
-    {:keep_state_and_data, [{:reply, from, calculate_scores(contestants)}]}
+    {:keep_state_and_data, [{:reply, from, {:ok, calculate_scores(contestants)}}]}
   end
 
   def handle_event(
@@ -169,7 +170,7 @@ defmodule Rnkr.Contest do
         %{contest: %{contestants: contestants}}
       ) do
     contestant_names = for %Contestant{name: name} <- Map.values(contestants), do: name
-    {:keep_state_and_data, [{:reply, from, contestant_names}]}
+    {:keep_state_and_data, [{:reply, from, {:ok, contestant_names}}]}
   end
 
   def handle_event(:cast, :end, data) do
