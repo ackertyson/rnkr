@@ -23,9 +23,17 @@ defmodule Rnkr.Voter do
   end
 
   def init({contest_name, username, contestant_names}) do
-    [a, b] = contestant_names
-    {:ok, voter} = Voter.new(username, %{a => 0, b => 0})
-    {:ok, :voting, %{voter: voter, contestants: contestant_names, contest_name: contest_name}}
+    votes = Enum.reduce(contestant_names, %{}, fn name, acc -> Map.put(acc, name, 0) end)
+    {:ok, voter} = Voter.new(username, votes)
+    [a | [b | _]] = contestant_names
+
+    {:ok, :voting,
+     %{
+       voter: voter,
+       contestants: [a, b],
+       contest_name: contest_name,
+       previous_contestants: []
+     }}
   end
 
   ### PUBLIC INTERFACE
@@ -54,32 +62,27 @@ defmodule Rnkr.Voter do
   defp record_vote(
          from,
          winner,
-         %{voter: %Voter{votes: votes} = voter, contestants: contestants} = data
+         %{
+           voter: %Voter{votes: votes} = voter,
+           contestants: contestants,
+           previous_contestants: previous_names
+         } = data
        )
-       when length(contestants) > 0 do
+       when length(contestants) > 1 do
     [loser | _] = Enum.filter(contestants, fn name -> name != winner end)
 
-    loser_previous_votes =
-      case Map.has_key?(votes, loser) do
-        true -> votes[loser]
-        _ -> 0
-      end
-
     # increase votes for WINNER, ensure LOSER has an entry in VOTES
-    new_votes =
-      Map.put(
-        %{
-          votes
-          | winner => votes[winner] + loser_previous_votes + 1
-        },
-        loser,
-        loser_previous_votes
-      )
+    new_votes = %{votes | winner => votes[winner] + votes[loser] + 1}
 
     new_voter = %Voter{voter | votes: new_votes}
 
-    {:next_state, :fetching, %{data | voter: new_voter, contestants: [winner]},
-     [{:reply, from, :ok}]}
+    {:next_state, :fetching,
+     %{
+       data
+       | voter: new_voter,
+         contestants: [winner],
+         previous_contestants: [winner | [loser | previous_names]]
+     }, [{:reply, from, :ok}]}
   end
 
   defp record_vote(from, _, data) do
@@ -112,11 +115,14 @@ defmodule Rnkr.Voter do
   def fetching(
         {:call, from},
         :get_contestants,
-        %{contest_name: contest_name, contestants: contestants, voter: %Voter{votes: votes}} =
-          data
+        %{
+          contest_name: contest_name,
+          contestants: contestants,
+          previous_contestants: previous_names
+        } = data
       ) do
     # get new calculated contestant(s) from CONTEST
-    case Contest.get_next_contestant(Contest.via_tuple(contest_name), Map.keys(votes)) do
+    case Contest.get_next_contestant(Contest.via_tuple(contest_name), previous_names) do
       {:ok, next_contestant} ->
         new_contestants = [next_contestant | contestants]
 

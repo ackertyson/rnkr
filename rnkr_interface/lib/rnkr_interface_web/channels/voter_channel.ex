@@ -48,6 +48,9 @@ defmodule RnkrInterfaceWeb.VoterChannel do
           end)
 
         {:reply, {:ok, names_hash}, socket}
+
+      :done ->
+        {:reply, :done, socket}
     end
   end
 

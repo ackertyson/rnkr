@@ -106,8 +106,7 @@ defmodule Rnkr.Contest do
       ) do
     [a | [b | others]] = contestant_order
     Process.flag(:trap_exit, true)
-    # send first two contestant names to Voter
-    {:ok, _} = Voter.start_link(contest_name, username, [a, b])
+    {:ok, _} = Voter.start_link(contest_name, username, contestant_order)
     # shift first contestant name to end of order (round robin for subsequent voters)
     new_contestant_order = [b | others] ++ [a]
 
