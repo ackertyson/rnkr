@@ -15,15 +15,16 @@ defmodule Rnkr.Contestant do
     {:ok, %Contestant{name: name, score: 0, votes: %{}}}
   end
 
-  @spec put_vote(Rnkr.Contestant.t(), pid(), integer()) :: Rnkr.Contestant.t()
+  @spec put_vote(Rnkr.Contestant.t(), pid(), integer()) :: {:ok, Rnkr.Contestant.t()}
   def put_vote(%Contestant{votes: votes} = contestant, voter_id, weight \\ 1) do
     new_votes = Map.put(votes, voter_id, weight)
-    with_updated_score(%Contestant{contestant | votes: new_votes})
+    {:ok, contestant} = with_updated_score(%Contestant{contestant | votes: new_votes})
+    {:ok, contestant}
   end
 
-  @spec with_updated_score(Rnkr.Contestant.t()) :: Rnkr.Contestant.t()
+  @spec with_updated_score(Rnkr.Contestant.t()) :: {:ok, Rnkr.Contestant.t()}
   defp with_updated_score(%Contestant{votes: votes} = contestant) do
     score = Enum.reduce(Map.values(votes), fn val, acc -> acc + val end)
-    %Contestant{contestant | score: score}
+    {:ok, %Contestant{contestant | score: score}}
   end
 end

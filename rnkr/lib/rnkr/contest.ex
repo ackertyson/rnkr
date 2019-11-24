@@ -1,7 +1,7 @@
 defmodule Rnkr.Contest do
   use GenStateMachine, callback_mode: :state_functions
 
-  alias Rnkr.{Contest, Contestant}
+  alias Rnkr.{Contest, Contestant, Voter}
 
   @enforce_keys [:name, :contestants]
   defstruct [:name, :contestants]
@@ -20,15 +20,15 @@ defmodule Rnkr.Contest do
 
     GenStateMachine.start_link(
       __MODULE__,
-      {name, contestants},
+      {name, contestants, contestant_names},
       name: via_tuple(name),
       timeout: @timeout
     )
   end
 
-  def init({name, contestants}) do
+  def init({name, contestants, contestant_names}) do
     {:ok, contest} = Contest.new(name, contestants)
-    {:ok, :preparing, %{contest: contest, voters: []}}
+    {:ok, :preparing, %{contest: contest, contestant_order: contestant_names}}
   end
 
   ### PUBLIC INTERFACE
@@ -42,20 +42,20 @@ defmodule Rnkr.Contest do
     GenStateMachine.cast(pid, :begin)
   end
 
-  def get_contestants(pid) do
-    GenStateMachine.call(pid, :get_contestants)
-  end
-
-  def join(pid) do
-    GenStateMachine.call(pid, :join)
-  end
-
-  def cast_vote(pid, data) do
-    GenStateMachine.call(pid, {:vote, data})
+  def join(pid, username) do
+    GenStateMachine.call(pid, {:join, username})
   end
 
   def get_scores(pid) do
     GenStateMachine.call(pid, :get_scores)
+  end
+
+  def get_next_contestant(pid, data) do
+    GenStateMachine.call(pid, {:get_next_contestant, data})
+  end
+
+  def request_score_fetch(pid, data) do
+    GenStateMachine.call(pid, {:request_score_fetch, data})
   end
 
   def close_voting(pid) do
@@ -72,26 +72,18 @@ defmodule Rnkr.Contest do
     end)
   end
 
-  defp record_vote(
-         {pid, _} = from,
-         contestant_name,
-         %{contest: %{contestants: contestants} = contest} = data
-       ) do
-    case Map.has_key?(contestants, contestant_name) do
+  defp with_updated_score(%Contestant{name: name, score: score} = contestant, acc, scores) do
+    case Map.has_key?(scores, name) do
       true ->
-        contestant = contestants[contestant_name]
-
-        new_contestants = %{
-          contestants
-          | contestant_name => Contestant.put_vote(contestant, pid)
-        }
-
-        new_contest = %{contest | contestants: new_contestants}
-        {:keep_state, %{data | contest: new_contest}, [{:reply, from, :ok}]}
+        Map.put(acc, name, %Contestant{contestant | score: score + scores[name]})
 
       _ ->
-        {:keep_state_and_data, [{:reply, from, {:error, {:reason, "No such contestant"}}}]}
+        acc
     end
+  end
+
+  defp record_scores(contestants, scores) do
+    Enum.reduce(Map.values(contestants), %{}, &with_updated_score(&1, &2, scores))
   end
 
   ### EVENT CALLBACKS
@@ -105,33 +97,49 @@ defmodule Rnkr.Contest do
   end
 
   def voting(
-        {:call, {pid, _} = from},
-        :join,
-        %{voters: voters} = data
+        {:call, from},
+        {:join, username},
+        %{
+          contest: %{name: contest_name},
+          contestant_order: contestant_order
+        } = data
       ) do
-    case Enum.member?(voters, pid) do
-      true ->
-        {:keep_state_and_data, [{:reply, from, :ok}]}
+    [a | [b | others]] = contestant_order
+    # send first two contestant names to Voter
+    {:ok, _} = Voter.start_link(contest_name, username, [a, b])
+    # shift first contestant name to end of order (round robin for subsequent voters)
+    new_contestant_order = [b | others] ++ [a]
 
-      _ ->
-        new_data = %{data | voters: [pid | voters]}
-        {:keep_state, new_data, [{:reply, from, :ok}]}
+    {:keep_state, %{data | contestant_order: new_contestant_order}, [{:reply, from, :ok}]}
+  end
+
+  def voting(
+        {:call, from},
+        {:get_next_contestant, previous_contestant_names},
+        %{contest: %{contestants: contestants}}
+      ) do
+    remaining_contestants =
+      Enum.filter(Map.values(contestants), fn %Contestant{name: name} ->
+        Enum.member?(previous_contestant_names, name)
+      end)
+
+    case remaining_contestants do
+      [next | _] ->
+        {:keep_state_and_data, [{:reply, from, {:ok, next}}]}
+
+      [] ->
+        {:keep_state_and_data, [{:reply, from, :done}]}
     end
   end
 
   def voting(
-        {:call, {pid, _} = from},
-        {:vote, contestant_name},
-        %{voters: voters} = data
+        :cast,
+        {:request_score_fetch, voter_pid},
+        %{contest: %Contest{contestants: contestants}} = data
       ) do
-    case Enum.member?(voters, pid) do
-      true ->
-        record_vote(from, contestant_name, data)
-
-      _ ->
-        {:keep_state_and_data,
-         [{:reply, from, {:error, {:reason, "You must join the event before voting"}}}]}
-    end
+    {:ok, scores} = Voter.get_scores(voter_pid)
+    new_contestants = record_scores(contestants, scores)
+    {:keep_state, %{data | contestants: new_contestants}}
   end
 
   def voting(event_type, event_content, data) do
@@ -143,15 +151,9 @@ defmodule Rnkr.Contest do
   end
 
   ## JOIN outside of VOTING state
-  def handle_event({:call, from}, :join, _) do
+  def handle_event({:call, from}, {:join, _}, _) do
     {:keep_state_and_data,
      [{:reply, from, {:error, {:reason, "Contest not found or is closed"}}}]}
-  end
-
-  ## VOTE outside of VOTING state
-
-  def handle_event({:call, from}, {:vote, _}, _) do
-    {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Voting is closed"}}}]}
   end
 
   ## events valid in ANY state
@@ -162,15 +164,6 @@ defmodule Rnkr.Contest do
         %{contest: %{contestants: contestants}}
       ) do
     {:keep_state_and_data, [{:reply, from, {:ok, calculate_scores(contestants)}}]}
-  end
-
-  def handle_event(
-        {:call, from},
-        :get_contestants,
-        %{contest: %{contestants: contestants}}
-      ) do
-    contestant_names = for %Contestant{name: name} <- Map.values(contestants), do: name
-    {:keep_state_and_data, [{:reply, from, {:ok, contestant_names}}]}
   end
 
   def handle_event(:cast, :end, data) do
@@ -184,7 +177,7 @@ defmodule Rnkr.Contest do
   end
 
   def handle_event({:call, from}, _, _) do
-    {:keep_state_and_data, [{:reply, from, {:error, {:reason, "unknown command"}}}]}
+    {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Unknown contest command"}}}]}
   end
 
   def handle_info(:timeout, data) do

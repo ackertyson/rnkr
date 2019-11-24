@@ -14,7 +14,7 @@ export interface Props {
 export function ConsumerPage(props: Props) {
   const contestants = Object.keys(props.contestants).map(k => {
     return (
-      <div>
+      <div key={k}>
         <button type="button" onClick={props.castVoteFor(k)} key={k}>
           Vote for {props.contestants[k]}
         </button>

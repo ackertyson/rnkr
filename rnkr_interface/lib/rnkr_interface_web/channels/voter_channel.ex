@@ -1,7 +1,7 @@
 defmodule RnkrInterfaceWeb.VoterChannel do
   use RnkrInterfaceWeb, :channel
 
-  alias Rnkr.{Contest, Contestant}
+  alias Rnkr.{Contest, Voter}
   alias RnkrInterfaceWeb.Presence
 
   def join(channel, %{"username" => username}, socket) do
@@ -13,7 +13,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
   def handle_in("cast_vote", %{"name" => contestant_name}, socket) do
     "contest:voter:" <> name = socket.topic
 
-    case Contest.cast_vote(via(name), contestant_name) do
+    case Voter.cast_vote(Voter.via_tuple(socket.assigns.username), contestant_name) do
       :ok ->
         RnkrInterfaceWeb.Endpoint.broadcast_from(
           self(),
@@ -40,8 +40,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
   end
 
   def handle_in("get_contestants", _payload, socket) do
-    [_, _, name] = String.split(socket.topic, ":")
-    {:ok, contestant_names} = Contest.get_contestants(via(name))
+    {:ok, contestant_names} = Voter.get_contestants(Voter.via_tuple(socket.assigns.username))
 
     names_hash =
       Enum.reduce(contestant_names, %{}, fn name, acc ->
@@ -57,8 +56,8 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         online_at: inspect(System.system_time(:second))
       })
 
-    Contest.join(via(contest_name))
-    {:noreply, socket}
+    Contest.join(via(contest_name), username)
+    {:noreply, assign(socket, :username, username)}
   end
 
   defp via(name), do: Contest.via_tuple(name)
