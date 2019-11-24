@@ -105,6 +105,7 @@ defmodule Rnkr.Contest do
         } = data
       ) do
     [a | [b | others]] = contestant_order
+    Process.flag(:trap_exit, true)
     # send first two contestant names to Voter
     {:ok, _} = Voter.start_link(contest_name, username, [a, b])
     # shift first contestant name to end of order (round robin for subsequent voters)
@@ -120,10 +121,13 @@ defmodule Rnkr.Contest do
       ) do
     remaining_contestants =
       Enum.filter(Map.values(contestants), fn %Contestant{name: name} ->
-        Enum.member?(previous_contestant_names, name)
+        Enum.member?(previous_contestant_names, name) == false
       end)
 
-    case remaining_contestants do
+    remaining_contestant_names =
+      Enum.map(remaining_contestants, fn %Contestant{name: name} -> name end)
+
+    case remaining_contestant_names do
       [next | _] ->
         {:keep_state_and_data, [{:reply, from, {:ok, next}}]}
 
@@ -182,5 +186,11 @@ defmodule Rnkr.Contest do
 
   def handle_info(:timeout, data) do
     {:stop, {:shutdown, :timeout}, data}
+  end
+
+  def handle_info(:exit, {pid, _}, reason) do
+    IO.puts("Child process exited")
+    IO.puts(pid)
+    IO.inspect(reason)
   end
 end

@@ -31,6 +31,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
     this.castVoteFor = this.castVoteFor.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
     this.joinContest = this.joinContest.bind(this);
+    this.onGetContestants = this.onGetContestants.bind(this);
     this.setContestants = this.setContestants.bind(this);
   }
 
@@ -45,7 +46,14 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   }
 
   onCastVoteSuccessFor(name: string): () => void {
-    return () => console.log(`Cast vote for ${name}`);
+    // return () => console.log(`Cast vote for ${name}`);
+    return () => this.state.channel.send(
+      this.state.topic, 'get_contestants', null, this.onGetContestants
+    );
+  }
+
+  onGetContestants(contestants: any): void {
+    this.setState({ contestants });
   }
 
   handleInputChange(event: InputEvent): void {

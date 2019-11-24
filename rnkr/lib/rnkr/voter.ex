@@ -57,15 +57,24 @@ defmodule Rnkr.Voter do
          %{voter: %Voter{votes: votes} = voter, contestants: contestants} = data
        )
        when length(contestants) > 0 do
-    [loser] = Enum.filter(contestants, fn name -> name != winner end)
-    loser_previous_votes = Map.get(votes, loser, 0)
+    [loser | _] = Enum.filter(contestants, fn name -> name != winner end)
+
+    loser_previous_votes =
+      case Map.has_key?(votes, loser) do
+        true -> votes[loser]
+        _ -> 0
+      end
 
     # increase votes for WINNER, ensure LOSER has an entry in VOTES
-    new_votes = %{
-      votes
-      | winner => votes[winner] + loser_previous_votes + 1,
-        loser => Map.update(votes, loser, 0, & &1)
-    }
+    new_votes =
+      Map.put(
+        %{
+          votes
+          | winner => votes[winner] + loser_previous_votes + 1
+        },
+        loser,
+        loser_previous_votes
+      )
 
     new_voter = %Voter{voter | votes: new_votes}
 
@@ -103,17 +112,25 @@ defmodule Rnkr.Voter do
   def fetching(
         {:call, from},
         :get_contestants,
-        %{contest_name: contest_name, contestants: contestants, votes: votes} = data
+        %{contest_name: contest_name, contestants: contestants, voter: %Voter{votes: votes}} =
+          data
       ) do
     # get new calculated contestant(s) from CONTEST
     case Contest.get_next_contestant(Contest.via_tuple(contest_name), Map.keys(votes)) do
       {:ok, next_contestant} ->
-        {:next_state, :voting, %{data | contestants: [next_contestant | contestants]},
-         [{:reply, from, :ok}]}
+        new_contestants = [next_contestant | contestants]
+
+        {:next_state, :voting, %{data | contestants: new_contestants},
+         [{:reply, from, {:ok, new_contestants}}]}
 
       :done ->
         {:next_state, :report_scores, data, [{:reply, from, :done}]}
     end
+  end
+
+  def fetching({:call, from}, {:vote, _}, _) do
+    {:keep_state_and_data,
+     [{:reply, from, {:error, {:reason, "Not in voting state; do 'get_contestants'"}}}]}
   end
 
   def fetching(event_type, event_content, data) do
@@ -122,6 +139,10 @@ defmodule Rnkr.Voter do
 
   def report_scores({:call, from}, :get_scores, %{votes: votes} = data) do
     {:next_state, :done, data, [{:reply, from, {:ok, votes}}]}
+  end
+
+  def report_scores(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
   end
 
   def done(event_type, event_content, data) do

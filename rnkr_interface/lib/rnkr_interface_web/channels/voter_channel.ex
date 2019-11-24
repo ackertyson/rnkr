@@ -40,14 +40,15 @@ defmodule RnkrInterfaceWeb.VoterChannel do
   end
 
   def handle_in("get_contestants", _payload, socket) do
-    {:ok, contestant_names} = Voter.get_contestants(Voter.via_tuple(socket.assigns.username))
+    case Voter.get_contestants(Voter.via_tuple(socket.assigns.username)) do
+      {:ok, contestant_names} ->
+        names_hash =
+          Enum.reduce(contestant_names, %{}, fn name, acc ->
+            Map.put(acc, name, name)
+          end)
 
-    names_hash =
-      Enum.reduce(contestant_names, %{}, fn name, acc ->
-        Map.put(acc, name, name)
-      end)
-
-    {:reply, {:ok, names_hash}, socket}
+        {:reply, {:ok, names_hash}, socket}
+    end
   end
 
   def handle_info({:after_join, {username, type, contest_name}}, socket) do
