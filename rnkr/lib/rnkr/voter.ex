@@ -86,7 +86,7 @@ defmodule Rnkr.Voter do
   end
 
   defp record_vote(from, _, data) do
-    {:next_state, :report_scores, data, [{:reply, from, :ok}]}
+    {:next_state, :report_scores, data, [{:reply, from, :done}]}
   end
 
   ### EVENT CALLBACKS
@@ -143,7 +143,7 @@ defmodule Rnkr.Voter do
     handle_event(event_type, event_content, data)
   end
 
-  def report_scores({:call, from}, :get_scores, %{votes: votes} = data) do
+  def report_scores({:call, from}, :get_scores, %{voter: %{votes: votes}} = data) do
     {:next_state, :done, data, [{:reply, from, {:ok, votes}}]}
   end
 

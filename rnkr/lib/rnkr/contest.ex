@@ -55,7 +55,7 @@ defmodule Rnkr.Contest do
   end
 
   def request_score_fetch(pid, data) do
-    GenStateMachine.call(pid, {:request_score_fetch, data})
+    GenStateMachine.cast(pid, {:request_score_fetch, data})
   end
 
   def close_voting(pid) do
@@ -72,6 +72,10 @@ defmodule Rnkr.Contest do
     end)
   end
 
+  defp record_scores(contestants, scores) do
+    Enum.reduce(Map.values(contestants), %{}, &with_updated_score(&1, &2, scores))
+  end
+
   defp with_updated_score(%Contestant{name: name, score: score} = contestant, acc, scores) do
     case Map.has_key?(scores, name) do
       true ->
@@ -80,10 +84,6 @@ defmodule Rnkr.Contest do
       _ ->
         acc
     end
-  end
-
-  defp record_scores(contestants, scores) do
-    Enum.reduce(Map.values(contestants), %{}, &with_updated_score(&1, &2, scores))
   end
 
   ### EVENT CALLBACKS
@@ -138,11 +138,12 @@ defmodule Rnkr.Contest do
   def voting(
         :cast,
         {:request_score_fetch, voter_pid},
-        %{contest: %Contest{contestants: contestants}} = data
+        %{contest: %Contest{contestants: contestants} = contest} = data
       ) do
     {:ok, scores} = Voter.get_scores(voter_pid)
     new_contestants = record_scores(contestants, scores)
-    {:keep_state, %{data | contestants: new_contestants}}
+    new_contest = %Contest{contest | contestants: new_contestants}
+    {:keep_state, %{data | contest: new_contest}}
   end
 
   def voting(event_type, event_content, data) do
@@ -164,7 +165,7 @@ defmodule Rnkr.Contest do
   def handle_event(
         {:call, from},
         :get_scores,
-        %{contest: %{contestants: contestants}}
+        %{contest: %Contest{contestants: contestants}}
       ) do
     {:keep_state_and_data, [{:reply, from, {:ok, calculate_scores(contestants)}}]}
   end

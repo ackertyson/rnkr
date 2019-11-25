@@ -1,0 +1,10 @@
+alias Rnkr.{Contest, Voter}
+{:ok, pid} = Contest.start_link("mine", ["A", "B", "C"])
+Contest.open_voting(pid)
+Contest.join(pid, "person")
+Voter.cast_vote(Voter.via_tuple("person"), "A")
+Voter.get_contestants(Voter.via_tuple("person"))
+Voter.cast_vote(Voter.via_tuple("person"), "A")
+Voter.get_contestants(Voter.via_tuple("person"))
+Contest.get_scores(pid)
+Contest.request_score_fetch(pid, Voter.via_tuple("person"))

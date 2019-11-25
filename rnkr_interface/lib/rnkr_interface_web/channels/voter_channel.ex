@@ -24,6 +24,10 @@ defmodule RnkrInterfaceWeb.VoterChannel do
 
         {:reply, :ok, socket}
 
+      :done ->
+        Contest.request_score_fetch(via(name), Voter.via_tuple(socket.assigns.username))
+        {:reply, :done, socket}
+
       {:error, reason} ->
         {:reply, {:error, %{reason: inspect(reason)}}, socket}
     end
@@ -50,6 +54,8 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         {:reply, {:ok, names_hash}, socket}
 
       :done ->
+        [_, _, name] = String.split(socket.topic, ":")
+        Contest.request_score_fetch(via(name), Voter.via_tuple(socket.assigns.username))
         {:reply, :done, socket}
     end
   end
