@@ -2,8 +2,8 @@ import * as React from 'react';
 import { ButtonHandler, InputHandler, Score } from './types';
 
 export interface Props {
-  onChange: InputHandler;
   createContest: ButtonHandler;
+  onChange: InputHandler;
   score: Score;
 }
 
@@ -16,12 +16,14 @@ export function ProducerPage(props: Props) {
     <section>
       <h2>Producer</h2>
 
-      Contest name:
-      <input type="text"
-        name="contest"
-        onChange={props.onChange}/>
+      <div>
+        Contest name:
+        <input type="text"
+          name="contest"
+          onChange={props.onChange}/>
+      </div>
       <button type="button" onClick={props.createContest}>
-        New contest
+        Create contest
       </button>
 
       <h2>Scores</h2>

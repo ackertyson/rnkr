@@ -6,12 +6,13 @@ import { ButtonHandler, InputEvent, FormContainer, Score } from './types';
 export interface Props {}
 
 export interface State {
+  active: boolean;
   channel: ChannelService;
+  contest: string;
+  contestants: {[key: string]: string};
   score: Score;
   subscriptions: Function[];
   topic: string;
-  contest: string;
-  contestants: {[key: string]: string};
   username: string;
 }
 
@@ -19,19 +20,20 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   constructor(props: Props) {
     super(props);
     this.state = {
+      active: false,
       channel: new ChannelService(),
+      contest: '',
+      contestants: {},
       score: {},
       subscriptions: [],
       topic: '',
-      contest: '',
-      contestants: {},
       username: ''
     };
 
     this.castVoteFor = this.castVoteFor.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
     this.joinContest = this.joinContest.bind(this);
-    this.onGetContestants = this.onGetContestants.bind(this);
+    this.onVotingComplete = this.onVotingComplete.bind(this);
     this.setContestants = this.setContestants.bind(this);
   }
 
@@ -46,14 +48,9 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   }
 
   onCastVoteSuccessFor(name: string): () => void {
-    // return () => console.log(`Cast vote for ${name}`);
     return () => this.state.channel.send(
-      this.state.topic, 'get_contestants', null, this.onGetContestants
+      this.state.topic, 'get_contestants', null, this.setContestants
     );
-  }
-
-  onGetContestants(contestants: any): void {
-    this.setState({ contestants });
   }
 
   handleInputChange(event: InputEvent): void {
@@ -65,22 +62,30 @@ export class Consumer extends React.Component<Props, State> implements FormConta
     if (!this.state.contest) throw new Error('Enter a contest name!');
     if (!this.state.username) throw new Error('Enter your name!');
     const topic = `contest:voter:${this.state.contest}`;
-    this.setState({ topic });
+    this.setState({ active: true, topic });
 
     this.state.channel.open(topic, { username: this.state.username });
+    this.state.channel.subscribe(
+      topic, 'voting_complete', this.onVotingComplete.bind(this)
+    );
     this.state.channel.send(topic, 'get_contestants', null, this.setContestants);
+  }
+
+  onVotingComplete(): void {
+    this.setState({ active: false });
   }
 
   render() {
     return (
       <ConsumerPage
-        onChange={this.handleInputChange}
-        score={this.state.score}
+        active={this.state.active}
+        castVoteFor={this.castVoteFor}
         contest={this.state.contest}
         contestants={this.state.contestants}
-        username={this.state.username}
         joinContest={this.joinContest}
-        castVoteFor={this.castVoteFor}/>
+        onChange={this.handleInputChange}
+        score={this.state.score}
+        username={this.state.username}/>
     );
   }
 

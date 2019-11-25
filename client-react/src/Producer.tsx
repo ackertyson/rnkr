@@ -7,10 +7,10 @@ export interface Props {}
 
 export interface State {
   channel: ChannelService;
-  topic: string;
   contest: string;
-  username: string;
   score: Score;
+  topic: string;
+  username: string;
 }
 
 export class Producer extends React.Component<Props, State> {
@@ -20,9 +20,9 @@ export class Producer extends React.Component<Props, State> {
     this.state = {
       channel: new ChannelService(),
       contest: '',
+      score: {},
       topic: '',
-      username: 'admin1',
-      score: {}
+      username: 'admin1'
     };
 
     this.sendCreateContest = this.sendCreateContest.bind(this);
@@ -69,8 +69,8 @@ export class Producer extends React.Component<Props, State> {
   render() {
     return (
       <ProducerPage
-        onChange={this.handleInputChange}
         createContest={this.createContest}
+        onChange={this.handleInputChange}
         score={this.state.score}/>
     );
   }

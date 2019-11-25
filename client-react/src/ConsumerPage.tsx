@@ -2,13 +2,14 @@ import * as React from 'react';
 import { ButtonHandler, InputHandler, Score } from './types';
 
 export interface Props {
-  onChange: InputHandler;
-  score: Score;
+  active: boolean;
+  castVoteFor: (contestantName: string) => ButtonHandler;
   contest: string;
   contestants: any;
-  username: string;
   joinContest: ButtonHandler;
-  castVoteFor: (contestantName: string) => ButtonHandler;
+  onChange: InputHandler;
+  score: Score;
+  username: string;
 }
 
 export function ConsumerPage(props: Props) {
@@ -26,21 +27,26 @@ export function ConsumerPage(props: Props) {
     <section>
       <h2>Consumer</h2>
 
-      Your name:
-      <input type="text"
-        name="username"
-        defaultValue={props.username}
-        onChange={props.onChange}/>
+      <div>
+        Your name:
+        <input type="text"
+          name="username"
+          defaultValue={props.username}
+          onChange={props.onChange}/>
+      </div>
 
-      Contest name:
-      <input type="text"
-        name="contest"
-        defaultValue={props.contest}
-        onChange={props.onChange}/>
+      <div>
+        Contest name:
+        <input type="text"
+          name="contest"
+          defaultValue={props.contest}
+          onChange={props.onChange}/>
+      </div>
 
       <button type="button" onClick={props.joinContest}>Join</button>
 
-      <div>{contestants}</div>
+      <div>{props.active && contestants}</div>
+      {props.active || <p>No active contest; join one to begin</p>}
     </section>
   );
 }

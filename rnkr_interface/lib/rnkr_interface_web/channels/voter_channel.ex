@@ -10,6 +10,19 @@ defmodule RnkrInterfaceWeb.VoterChannel do
     {:ok, socket}
   end
 
+  defp request_score_fetch(name, socket) do
+    Contest.request_score_fetch(via(name), Voter.via_tuple(socket.assigns.username))
+
+    push(socket, "voting_complete", %{})
+
+    RnkrInterfaceWeb.Endpoint.broadcast_from(
+      self(),
+      "contest:moderator:" <> name,
+      "score_change",
+      %{}
+    )
+  end
+
   def handle_in("cast_vote", %{"name" => contestant_name}, socket) do
     "contest:voter:" <> name = socket.topic
 
@@ -25,7 +38,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         {:reply, :ok, socket}
 
       :done ->
-        Contest.request_score_fetch(via(name), Voter.via_tuple(socket.assigns.username))
+        request_score_fetch(name, socket)
         {:reply, :done, socket}
 
       {:error, reason} ->
@@ -55,7 +68,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
 
       :done ->
         [_, _, name] = String.split(socket.topic, ":")
-        Contest.request_score_fetch(via(name), Voter.via_tuple(socket.assigns.username))
+        request_score_fetch(name, socket)
         {:reply, :done, socket}
     end
   end
