@@ -34,6 +34,10 @@ defmodule Rnkr.Voter do
      }}
   end
 
+  def terminate(:shutdown, _state, %{voter: %Voter{name: name}, contest_name: contest}) do
+    IO.puts("Shutting down process for voter '#{name}' in contest '#{contest}'...")
+  end
+
   ### PUBLIC INTERFACE
 
   @spec new(String.t(), %{String.t() => integer()}) :: {:ok, Rnkr.Voter.t()}
@@ -51,6 +55,10 @@ defmodule Rnkr.Voter do
 
   def get_scores(pid) do
     GenStateMachine.call(pid, :get_scores)
+  end
+
+  def close(pid, reason) do
+    GenStateMachine.stop(pid, reason)
   end
 
   def via_tuple(name), do: {:via, Registry, {Registry.Rnkr, "voter:" <> name}}
@@ -132,6 +140,11 @@ defmodule Rnkr.Voter do
     end
   end
 
+  def voting({:call, from}, :get_contestants, _) do
+    {:keep_state_and_data,
+     [{:reply, from, {:error, {:reason, "In voting state; do 'cast_vote'"}}}]}
+  end
+
   def voting(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
@@ -144,14 +157,12 @@ defmodule Rnkr.Voter do
     handle_event(event_type, event_content, data)
   end
 
-  def done(event_type, event_content, data) do
-    handle_event(event_type, event_content, data)
+  def done({:call, from}, _, _) do
+    {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Voting is closed"}}}]}
   end
 
-  ## VOTE outside of VOTING state
-
-  def handle_event({:call, from}, {:vote, _}, _) do
-    {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Voting is closed"}}}]}
+  def done(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
   end
 
   ## CATCH-ALLS

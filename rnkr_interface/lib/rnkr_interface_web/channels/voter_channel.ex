@@ -67,12 +67,6 @@ defmodule RnkrInterfaceWeb.VoterChannel do
     end
   end
 
-  def handle_in("get_scores", _payload, socket) do
-    "contest:voter:" <> name = socket.topic
-    {:ok, scores} = Contest.get_scores(via_contest(name))
-    {:reply, {:ok, scores}, socket}
-  end
-
   def handle_info({:after_join, {username, type, contest_name}}, socket) do
     {:ok, _} =
       Presence.track(socket, type <> username <> contest_name, %{

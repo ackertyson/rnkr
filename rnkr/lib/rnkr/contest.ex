@@ -117,6 +117,7 @@ defmodule Rnkr.Contest do
     {:ok, scores} = Voter.get_scores(voter_pid)
     new_contestants = record_scores(contestants, scores)
     new_contest = %Contest{contest | contestants: new_contestants}
+    # Voter.close(voter_pid, :shutdown)
     {:keep_state, %{data | contest: new_contest}}
   end
 
@@ -158,13 +159,12 @@ defmodule Rnkr.Contest do
     {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Unknown contest command"}}}]}
   end
 
-  def handle_info(:timeout, data) do
-    {:stop, {:shutdown, :timeout}, data}
+  def handle_event(:info, {:EXIT, _pid, :shutdown}, _) do
+    IO.puts("Child process was shut down")
+    :keep_state_and_data
   end
 
-  def handle_info(:exit, {pid, _}, reason) do
-    IO.puts("Child process exited")
-    IO.puts(pid)
-    IO.inspect(reason)
+  def handle_info(:timeout, data) do
+    {:stop, {:shutdown, :timeout}, data}
   end
 end
