@@ -50,10 +50,6 @@ defmodule Rnkr.Contest do
     GenStateMachine.call(pid, :get_scores)
   end
 
-  def get_next_contestant(pid, data) do
-    GenStateMachine.call(pid, {:get_next_contestant, data})
-  end
-
   def request_score_fetch(pid, data) do
     GenStateMachine.cast(pid, {:request_score_fetch, data})
   end
@@ -111,28 +107,6 @@ defmodule Rnkr.Contest do
     new_contestant_order = [b | others] ++ [a]
 
     {:keep_state, %{data | contestant_order: new_contestant_order}, [{:reply, from, :ok}]}
-  end
-
-  def voting(
-        {:call, from},
-        {:get_next_contestant, previous_contestant_names},
-        %{contest: %{contestants: contestants}}
-      ) do
-    remaining_contestants =
-      Enum.filter(Map.values(contestants), fn %Contestant{name: name} ->
-        Enum.member?(previous_contestant_names, name) == false
-      end)
-
-    remaining_contestant_names =
-      Enum.map(remaining_contestants, fn %Contestant{name: name} -> name end)
-
-    case remaining_contestant_names do
-      [next | _] ->
-        {:keep_state_and_data, [{:reply, from, {:ok, next}}]}
-
-      [] ->
-        {:keep_state_and_data, [{:reply, from, :done}]}
-    end
   end
 
   def voting(

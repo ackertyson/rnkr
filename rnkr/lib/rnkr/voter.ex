@@ -2,7 +2,6 @@ defmodule Rnkr.Voter do
   use GenStateMachine, callback_mode: :state_functions
 
   alias __MODULE__
-  alias Rnkr.Contest
 
   @enforce_keys [:name, :votes]
   defstruct [:name, :votes]
@@ -25,14 +24,13 @@ defmodule Rnkr.Voter do
   def init({contest_name, username, contestant_names}) do
     votes = Enum.reduce(contestant_names, %{}, fn name, acc -> Map.put(acc, name, 0) end)
     {:ok, voter} = Voter.new(username, votes)
-    [a | [b | _]] = contestant_names
 
-    {:ok, :voting,
+    {:ok, :updating_ballot,
      %{
        voter: voter,
-       contestants: [a, b],
+       contestants: contestant_names,
        contest_name: contest_name,
-       previous_contestants: []
+       current_ballot: []
      }}
   end
 
@@ -59,95 +57,102 @@ defmodule Rnkr.Voter do
 
   ### PRIVATE METHODS
 
+  defp fill_ballot(ballot, contestants) when length(ballot) == 2 do
+    {ballot, contestants}
+  end
+
+  defp fill_ballot(ballot, contestants) when length(contestants) > 0 do
+    [a | remaining_contestants] = contestants
+    new_ballot = [a | ballot]
+    fill_ballot(new_ballot, remaining_contestants)
+  end
+
+  defp fill_ballot(ballot, _) do
+    {ballot, []}
+  end
+
   defp record_vote(
          from,
          winner,
          %{
            voter: %Voter{votes: votes} = voter,
-           contestants: contestants,
-           previous_contestants: previous_names
+           current_ballot: current_ballot
          } = data
-       )
-       when length(contestants) > 1 do
-    [loser | _] = Enum.filter(contestants, fn name -> name != winner end)
+       ) do
+    [loser | _] =
+      Enum.filter(current_ballot, fn contestant ->
+        contestant != winner
+      end)
 
-    # increase votes for WINNER, ensure LOSER has an entry in VOTES
     new_votes = %{votes | winner => votes[winner] + votes[loser] + 1}
-
     new_voter = %Voter{voter | votes: new_votes}
 
-    {:next_state, :fetching,
-     %{
-       data
-       | voter: new_voter,
-         contestants: [winner],
-         previous_contestants: [winner | [loser | previous_names]]
-     }, [{:reply, from, :ok}]}
+    {:next_state, :updating_ballot, %{data | voter: new_voter, current_ballot: [winner]},
+     [{:reply, from, :ok}]}
   end
 
   defp record_vote(from, _, data) do
-    {:next_state, :report_scores, data, [{:reply, from, :done}]}
+    {:next_state, :reporting_scores, data, [{:reply, from, :done}]}
   end
 
   ### EVENT CALLBACKS
 
-  def voting(
+  def updating_ballot(
         {:call, from},
-        {:vote, payload},
-        data
+        :get_contestants,
+        %{contestants: contestants} = data
+      )
+      when length(contestants) == 0 do
+    {:next_state, :reporting_scores, data, [{:reply, from, :done}]}
+  end
+
+  def updating_ballot(
+        {:call, from},
+        :get_contestants,
+        %{
+          contestants: contestants,
+          current_ballot: current_ballot
+        } = data
       ) do
-    record_vote(from, payload, data)
+    {next_ballot, remaining_contestants} = fill_ballot(current_ballot, contestants)
+
+    {:next_state, :voting,
+     %{data | contestants: remaining_contestants, current_ballot: next_ballot},
+     [{:reply, from, {:ok, next_ballot}}]}
+  end
+
+  def updating_ballot({:call, from}, {:vote, _}, _) do
+    {:keep_state_and_data,
+     [{:reply, from, {:error, {:reason, "Not in voting state; do 'get_contestants'"}}}]}
+  end
+
+  def updating_ballot(event_type, event_content, data) do
+    handle_event(event_type, event_content, data)
   end
 
   def voting(
         {:call, from},
-        :get_contestants,
-        %{contestants: contestants}
+        {:vote, winner},
+        %{current_ballot: current_ballot} = data
       ) do
-    # return currently stored contestants
-    {:keep_state_and_data, [{:reply, from, {:ok, contestants}}]}
+    case Enum.member?(current_ballot, winner) do
+      true ->
+        record_vote(from, winner, data)
+
+      _ ->
+        {:keep_state_and_data, [{:reply, from, {:error, {:reason, "No such contestant"}}}]}
+    end
   end
 
   def voting(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
 
-  def fetching(
-        {:call, from},
-        :get_contestants,
-        %{
-          contest_name: contest_name,
-          contestants: contestants,
-          previous_contestants: previous_names
-        } = data
-      ) do
-    # get new calculated contestant(s) from CONTEST
-    case Contest.get_next_contestant(Contest.via_tuple(contest_name), previous_names) do
-      {:ok, next_contestant} ->
-        new_contestants = [next_contestant | contestants]
-
-        {:next_state, :voting, %{data | contestants: new_contestants},
-         [{:reply, from, {:ok, new_contestants}}]}
-
-      :done ->
-        {:next_state, :report_scores, data, [{:reply, from, :done}]}
-    end
-  end
-
-  def fetching({:call, from}, {:vote, _}, _) do
-    {:keep_state_and_data,
-     [{:reply, from, {:error, {:reason, "Not in voting state; do 'get_contestants'"}}}]}
-  end
-
-  def fetching(event_type, event_content, data) do
-    handle_event(event_type, event_content, data)
-  end
-
-  def report_scores({:call, from}, :get_scores, %{voter: %{votes: votes}} = data) do
+  def reporting_scores({:call, from}, :get_scores, %{voter: %{votes: votes}} = data) do
     {:next_state, :done, data, [{:reply, from, {:ok, votes}}]}
   end
 
-  def report_scores(event_type, event_content, data) do
+  def reporting_scores(event_type, event_content, data) do
     handle_event(event_type, event_content, data)
   end
 
