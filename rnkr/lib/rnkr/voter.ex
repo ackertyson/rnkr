@@ -91,10 +91,6 @@ defmodule Rnkr.Voter do
      [{:reply, from, :ok}]}
   end
 
-  defp record_vote(from, _, data) do
-    {:next_state, :reporting_scores, data, [{:reply, from, :done}]}
-  end
-
   ### EVENT CALLBACKS
 
   def updating_ballot(
