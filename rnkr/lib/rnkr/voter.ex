@@ -71,26 +71,6 @@ defmodule Rnkr.Voter do
     {ballot, []}
   end
 
-  defp record_vote(
-         from,
-         winner,
-         %{
-           voter: %Voter{votes: votes} = voter,
-           current_ballot: current_ballot
-         } = data
-       ) do
-    [loser | _] =
-      Enum.filter(current_ballot, fn contestant ->
-        contestant != winner
-      end)
-
-    new_votes = %{votes | winner => votes[winner] + votes[loser] + 1}
-    new_voter = %Voter{voter | votes: new_votes}
-
-    {:next_state, :updating_ballot, %{data | voter: new_voter, current_ballot: [winner]},
-     [{:reply, from, :ok}]}
-  end
-
   ### EVENT CALLBACKS
 
   def updating_ballot(
@@ -129,11 +109,23 @@ defmodule Rnkr.Voter do
   def voting(
         {:call, from},
         {:vote, winner},
-        %{current_ballot: current_ballot} = data
+        %{
+          voter: %Voter{votes: votes} = voter,
+          current_ballot: current_ballot
+        } = data
       ) do
     case Enum.member?(current_ballot, winner) do
       true ->
-        record_vote(from, winner, data)
+        [loser | _] =
+          Enum.filter(current_ballot, fn contestant ->
+            contestant != winner
+          end)
+
+        new_votes = %{votes | winner => votes[winner] + votes[loser] + 1}
+        new_voter = %Voter{voter | votes: new_votes}
+
+        {:next_state, :updating_ballot, %{data | voter: new_voter, current_ballot: [winner]},
+         [{:reply, from, :ok}]}
 
       _ ->
         {:keep_state_and_data, [{:reply, from, {:error, {:reason, "No such contestant"}}}]}

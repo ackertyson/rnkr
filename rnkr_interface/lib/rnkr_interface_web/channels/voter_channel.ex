@@ -11,7 +11,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
   end
 
   defp request_score_fetch(name, socket) do
-    Contest.request_score_fetch(via(name), Voter.via_tuple(socket.assigns.username))
+    Contest.request_score_fetch(via_contest(name), via(socket.assigns.username))
 
     push(socket, "voting_complete", %{})
 
@@ -26,7 +26,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
   def handle_in("cast_vote", %{"name" => contestant_name}, socket) do
     "contest:voter:" <> name = socket.topic
 
-    case Voter.cast_vote(Voter.via_tuple(socket.assigns.username), contestant_name) do
+    case Voter.cast_vote(via(socket.assigns.username), contestant_name) do
       :ok ->
         RnkrInterfaceWeb.Endpoint.broadcast_from(
           self(),
@@ -50,14 +50,8 @@ defmodule RnkrInterfaceWeb.VoterChannel do
     {:reply, {:error, %{reason: "400 Bad Request"}}, socket}
   end
 
-  def handle_in("get_scores", _payload, socket) do
-    [_, _, name] = String.split(socket.topic, ":")
-    {:ok, scores} = Contest.get_scores(via(name))
-    {:reply, {:ok, scores}, socket}
-  end
-
   def handle_in("get_contestants", _payload, socket) do
-    case Voter.get_contestants(Voter.via_tuple(socket.assigns.username)) do
+    case Voter.get_contestants(via(socket.assigns.username)) do
       {:ok, contestant_names} ->
         names_hash =
           Enum.reduce(contestant_names, %{}, fn name, acc ->
@@ -67,10 +61,16 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         {:reply, {:ok, names_hash}, socket}
 
       :done ->
-        [_, _, name] = String.split(socket.topic, ":")
+        "contest:voter:" <> name = socket.topic
         request_score_fetch(name, socket)
         {:reply, :done, socket}
     end
+  end
+
+  def handle_in("get_scores", _payload, socket) do
+    "contest:voter:" <> name = socket.topic
+    {:ok, scores} = Contest.get_scores(via_contest(name))
+    {:reply, {:ok, scores}, socket}
   end
 
   def handle_info({:after_join, {username, type, contest_name}}, socket) do
@@ -79,9 +79,10 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         online_at: inspect(System.system_time(:second))
       })
 
-    Contest.join(via(contest_name), username)
+    Contest.join(via_contest(contest_name), username)
     {:noreply, assign(socket, :username, username)}
   end
 
-  defp via(name), do: Contest.via_tuple(name)
+  defp via(name), do: Voter.via_tuple(name)
+  defp via_contest(name), do: Contest.via_tuple(name)
 end
