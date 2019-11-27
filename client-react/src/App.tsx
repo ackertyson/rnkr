@@ -7,7 +7,6 @@ import Producer from './Producer';
 function App() {
   return (
     <div className="App">
-      <h1 className="page-header">Rnkr</h1>
       <Router>
         {/* <header className="App-header">
           <ul>
@@ -20,6 +19,7 @@ function App() {
           </ul>
         </header> */}
         <div className="main">
+          <h1 className="page-header">Rnkr</h1>
           <Route exact path="/" component={Consumer}/>
           <Route path="/voter" component={Consumer}/>
           <Route path="/moderator" component={Producer}/>
