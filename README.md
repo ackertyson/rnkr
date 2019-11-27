@@ -26,5 +26,5 @@ From project root...
 
 And then in browser...
 
-1. Start new contest from Producer screen
-2. Open Consumer screen in new tab, join same contest, and vote!
+1. Start new contest at `http://localhost:3000/moderator`
+2. Open `http://localhost:3000` in new tab, join same contest, and vote!

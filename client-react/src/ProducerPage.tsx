@@ -14,10 +14,10 @@ export function ProducerPage(props: Props) {
 
   return (
     <section>
-      <h2>Producer</h2>
+      <h2>Moderator</h2>
 
-      <div>
-        Contest name:
+      <div className="form-group">
+        <label>Contest name</label>
         <input type="text"
           name="contest"
           onChange={props.onChange}/>
@@ -26,10 +26,12 @@ export function ProducerPage(props: Props) {
         Create contest
       </button>
 
-      <h2>Scores</h2>
-      <ul>
-        {scores}
-      </ul>
+      {scores.length > 0 && <div>
+        <h2>Scores</h2>
+        <ul>
+          {scores}
+        </ul>
+      </div>}
     </section>
   );
 }

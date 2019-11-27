@@ -15,9 +15,9 @@ export interface Props {
 export function ConsumerPage(props: Props) {
   const contestants = Object.keys(props.contestants).map(k => {
     return (
-      <div key={k}>
-        <button type="button" onClick={props.castVoteFor(k)} key={k}>
-          Vote for {props.contestants[k]}
+      <div className="form-group" key={k}>
+        <button type="button" className="primary" onClick={props.castVoteFor(k)} key={k}>
+          {props.contestants[k]}
         </button>
       </div>
     );
@@ -25,28 +25,30 @@ export function ConsumerPage(props: Props) {
 
   return (
     <section>
-      <h2>Consumer</h2>
+      {props.active || <div>
+        <div className="form-group">
+          <label>Your name</label>
+          <input type="text"
+            name="username"
+            defaultValue={props.username}
+            onChange={props.onChange}/>
+        </div>
 
-      <div>
-        Your name:
-        <input type="text"
-          name="username"
-          defaultValue={props.username}
-          onChange={props.onChange}/>
-      </div>
+        <div className="form-group">
+          <label>Contest name</label>
+          <input type="text"
+            name="contest"
+            defaultValue={props.contest}
+            onChange={props.onChange}/>
+        </div>
 
-      <div>
-        Contest name:
-        <input type="text"
-          name="contest"
-          defaultValue={props.contest}
-          onChange={props.onChange}/>
-      </div>
+        <button type="button" onClick={props.joinContest}>Join</button>
+      </div>}
 
-      <button type="button" onClick={props.joinContest}>Join</button>
-
-      <div>{props.active && contestants}</div>
-      {props.active || <p>No active contest; join one to begin</p>}
+      {props.active && <div>
+        <h4>Which is better?</h4>
+        {contestants}
+      </div>}
     </section>
   );
 }

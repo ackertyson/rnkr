@@ -1,26 +1,29 @@
 import * as React from 'react';
 import './App.css';
-import { BrowserRouter as Router, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 import Consumer from './Consumer';
 import Producer from './Producer';
 
 function App() {
   return (
     <div className="App">
+      <h1 className="page-header">Rnkr</h1>
       <Router>
-        <header className="App-header">
+        {/* <header className="App-header">
           <ul>
             <li>
-              <Link to="/producer">Producer</Link>
+              <Link to="/producer">Moderator</Link>
             </li>
             <li>
-              <Link to="/consumer">Consumer</Link>
+              <Link to="/consumer">Voter</Link>
             </li>
           </ul>
-        </header>
-        <Route exact path="/" component={Producer}/>
-        <Route path="/consumer" component={Consumer}/>
-        <Route path="/producer" component={Producer}/>
+        </header> */}
+        <div className="main">
+          <Route exact path="/" component={Consumer}/>
+          <Route path="/voter" component={Consumer}/>
+          <Route path="/moderator" component={Producer}/>
+        </div>
       </Router>
     </div>
   );
