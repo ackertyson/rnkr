@@ -72,10 +72,11 @@ defmodule Rnkr.Contest do
     Enum.reduce(Map.values(contestants), %{}, &with_updated_score(&1, &2, scores))
   end
 
-  defp with_updated_score(%Contestant{name: name, score: score} = contestant, acc, scores) do
+  defp with_updated_score(%Contestant{name: name} = contestant, acc, scores) do
     case Map.has_key?(scores, name) do
       true ->
-        Map.put(acc, name, %Contestant{contestant | score: score + scores[name]})
+        {:ok, new_contestant} = Contestant.put_vote(contestant, scores[name])
+        Map.put(acc, name, new_contestant)
 
       _ ->
         acc
