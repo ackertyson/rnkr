@@ -9,6 +9,7 @@ export interface Props {
   joinContest: ButtonHandler;
   onChange: InputHandler;
   score: Score;
+  status: string;
   username: string;
 }
 
@@ -50,6 +51,7 @@ export function ConsumerPage(props: Props) {
         <h4>Which is better?</h4>
         {contestants}
       </div>}
+      <h4 className="status">{props.status}</h4>
     </section>
   );
 }

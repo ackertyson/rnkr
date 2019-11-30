@@ -11,6 +11,7 @@ export interface State {
   contest: string;
   contestants: {[key: string]: string};
   score: Score;
+  status: string;
   subscriptions: Function[];
   topic: string;
   username: string;
@@ -25,6 +26,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       contest: '',
       contestants: {},
       score: {},
+      status: '',
       subscriptions: [],
       topic: '',
       username: ''
@@ -73,7 +75,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   }
 
   onError(error: any) {
-    console.error(error);
+    this.setState({ status: error.reason });
   }
 
   onVotingComplete(): void {
@@ -90,6 +92,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
         joinContest={this.joinContest}
         onChange={this.handleInputChange}
         score={this.state.score}
+        status={this.state.status}
         username={this.state.username}/>
     );
   }

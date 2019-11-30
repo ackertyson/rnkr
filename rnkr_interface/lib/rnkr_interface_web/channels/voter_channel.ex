@@ -84,7 +84,7 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         {:reply, :done, socket}
 
       {:error, {:reason, message}} ->
-        {:reply, {:error, {:reason, message}}, socket}
+        {:reply, {:error, %{reason: message}}, socket}
     end
   end
 
