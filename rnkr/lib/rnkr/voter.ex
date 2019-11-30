@@ -136,7 +136,7 @@ defmodule Rnkr.Voter do
          [{:reply, from, :ok}]}
 
       _ ->
-        {:keep_state_and_data, [{:reply, from, {:error, {:reason, "No such contestant"}}}]}
+        {:keep_state_and_data, [{:reply, from, {:error, {:reason, "Invalid contestant"}}}]}
     end
   end
 

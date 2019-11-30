@@ -121,11 +121,16 @@ defmodule Rnkr.Contest do
         {:request_score_fetch, voter_pid},
         %{contest: %Contest{contestants: contestants} = contest} = data
       ) do
-    {:ok, scores} = Voter.get_scores(voter_pid)
-    new_contestants = record_scores(contestants, scores)
-    new_contest = %Contest{contest | contestants: new_contestants}
-    # Voter.close(voter_pid, :shutdown)
-    {:keep_state, %{data | contest: new_contest}, [{:reply, from, {:ok, scores}}]}
+    case Voter.get_scores(voter_pid) do
+      {:ok, scores} ->
+        new_contestants = record_scores(contestants, scores)
+        new_contest = %Contest{contest | contestants: new_contestants}
+        # Voter.close(voter_pid, :shutdown)
+        {:keep_state, %{data | contest: new_contest}, [{:reply, from, {:ok, scores}}]}
+
+      {:error, {:reason, message}} ->
+        {:keep_state_and_data, [{:reply, from, {:error, {:reason, message}}}]}
+    end
   end
 
   def voting(event_type, event_content, data) do
