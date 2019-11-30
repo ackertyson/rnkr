@@ -1,7 +1,11 @@
 defmodule RnkrInterfaceWeb.VoterChannel do
   use RnkrInterfaceWeb, :channel
 
+  import Ecto.Query
+
   alias Rnkr.{Contest, Voter}
+  alias RnkrInterface.{Score, Repo}
+  alias RnkrInterface.Contest, as: ContestRepo
   alias RnkrInterfaceWeb.Presence
 
   def join(channel, %{"username" => username}, socket) do
@@ -10,9 +14,23 @@ defmodule RnkrInterfaceWeb.VoterChannel do
     {:ok, socket}
   end
 
-  defp request_score_fetch(name, socket) do
-    Contest.request_score_fetch(via_contest(name), via(socket.assigns.username))
+  defp record_scores(contest_name, username, scores) do
+    %ContestRepo{id: contest_id} = Repo.one(from c in ContestRepo, where: c.name == ^contest_name)
 
+    Enum.each(Map.keys(scores), fn name ->
+      Repo.insert(%Score{
+        contest_id: contest_id,
+        contestant: name,
+        username: username,
+        value: scores[name]
+      })
+    end)
+  end
+
+  defp request_score_fetch(name, socket) do
+    {:ok, scores} = Contest.request_score_fetch(via_contest(name), via(socket.assigns.username))
+
+    record_scores(name, socket.assigns.username, scores)
     push(socket, "voting_complete", %{})
 
     RnkrInterfaceWeb.Endpoint.broadcast_from(
@@ -64,6 +82,9 @@ defmodule RnkrInterfaceWeb.VoterChannel do
         "contest:voter:" <> name = socket.topic
         request_score_fetch(name, socket)
         {:reply, :done, socket}
+
+      {:error, {:reason, message}} ->
+        {:reply, {:error, {:reason, message}}, socket}
     end
   end
 

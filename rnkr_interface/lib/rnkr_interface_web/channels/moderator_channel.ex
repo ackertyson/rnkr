@@ -2,6 +2,8 @@ defmodule RnkrInterfaceWeb.ModeratorChannel do
   use RnkrInterfaceWeb, :channel
 
   alias Rnkr.Contest
+  alias RnkrInterface.Repo
+  alias RnkrInterface.Contest, as: ContestRepo
   alias RnkrInterfaceWeb.Presence
 
   def join(channel, %{"username" => username}, socket) do
@@ -13,6 +15,7 @@ defmodule RnkrInterfaceWeb.ModeratorChannel do
   def handle_in("create", %{"name" => name, "contestants" => contestant_names}, socket) do
     case Contest.start_link(name, contestant_names) do
       {:ok, _} ->
+        Repo.insert(%ContestRepo{name: name})
         :ok = Contest.open_voting(via(name))
         {:reply, :ok, socket}
 
@@ -25,7 +28,7 @@ defmodule RnkrInterfaceWeb.ModeratorChannel do
   end
 
   def handle_in("create", _payload, socket) do
-    {:reply, {:error, %{reason: "422 Unprocessable Entity"}}, socket}
+    {:reply, {:error, %{reason: "400 Bad Request"}}, socket}
   end
 
   def handle_in("get_scores", _payload, socket) do

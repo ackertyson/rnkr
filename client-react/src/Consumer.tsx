@@ -33,6 +33,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
     this.castVoteFor = this.castVoteFor.bind(this);
     this.handleInputChange = this.handleInputChange.bind(this);
     this.joinContest = this.joinContest.bind(this);
+    this.onError = this.onError.bind(this);
     this.onVotingComplete = this.onVotingComplete.bind(this);
     this.setContestants = this.setContestants.bind(this);
   }
@@ -68,7 +69,11 @@ export class Consumer extends React.Component<Props, State> implements FormConta
     this.state.channel.subscribe(
       topic, 'voting_complete', this.onVotingComplete.bind(this)
     );
-    this.state.channel.send(topic, 'get_contestants', null, this.setContestants);
+    this.state.channel.send(topic, 'get_contestants', null, this.setContestants, this.onError);
+  }
+
+  onError(error: any) {
+    console.error(error);
   }
 
   onVotingComplete(): void {

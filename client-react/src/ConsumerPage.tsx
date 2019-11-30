@@ -46,6 +46,7 @@ export function ConsumerPage(props: Props) {
       </div>}
 
       {props.active && <div>
+        <h2>{props.contest}</h2>
         <h4>Which is better?</h4>
         {contestants}
       </div>}

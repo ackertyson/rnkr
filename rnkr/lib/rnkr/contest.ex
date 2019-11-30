@@ -51,7 +51,7 @@ defmodule Rnkr.Contest do
   end
 
   def request_score_fetch(pid, data) do
-    GenStateMachine.cast(pid, {:request_score_fetch, data})
+    GenStateMachine.call(pid, {:request_score_fetch, data})
   end
 
   def close_voting(pid) do
@@ -102,15 +102,21 @@ defmodule Rnkr.Contest do
       ) do
     [a | [b | others]] = contestant_order
     Process.flag(:trap_exit, true)
-    {:ok, _} = Voter.start_link(contest_name, username, contestant_order)
-    # shift first contestant name to end of order (round robin for subsequent voters)
-    new_contestant_order = [b | others] ++ [a]
 
-    {:keep_state, %{data | contestant_order: new_contestant_order}, [{:reply, from, :ok}]}
+    case Voter.start_link(contest_name, username, contestant_order) do
+      {:ok, _} ->
+        # shift first contestant name to end of order (round robin for subsequent voters)
+        new_contestant_order = [b | others] ++ [a]
+
+        {:keep_state, %{data | contestant_order: new_contestant_order}, [{:reply, from, :ok}]}
+
+      {:error, {:already_started, _}} ->
+        {:keep_state_and_data, [{:reply, from, :ok}]}
+    end
   end
 
   def voting(
-        :cast,
+        {:call, from},
         {:request_score_fetch, voter_pid},
         %{contest: %Contest{contestants: contestants} = contest} = data
       ) do
@@ -118,7 +124,7 @@ defmodule Rnkr.Contest do
     new_contestants = record_scores(contestants, scores)
     new_contest = %Contest{contest | contestants: new_contestants}
     # Voter.close(voter_pid, :shutdown)
-    {:keep_state, %{data | contest: new_contest}}
+    {:keep_state, %{data | contest: new_contest}, [{:reply, from, {:ok, scores}}]}
   end
 
   def voting(event_type, event_content, data) do

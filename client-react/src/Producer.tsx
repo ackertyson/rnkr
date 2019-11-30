@@ -9,6 +9,7 @@ export interface State {
   channel: ChannelService;
   contest: string;
   score: Score;
+  status: string;
   topic: string;
   username: string;
 }
@@ -21,6 +22,7 @@ export class Producer extends React.Component<Props, State> {
       channel: new ChannelService(),
       contest: '',
       score: {},
+      status: '',
       topic: '',
       username: 'admin1'
     };
@@ -57,7 +59,7 @@ export class Producer extends React.Component<Props, State> {
   }
 
   onCreateSuccessFor(name: any): () => void {
-    return () => console.log(`Created contest '${name}'`);
+    return () => this.setState({ status: `Created contest '${name}'` });
   }
 
   onScoreChange(score: Score): void {
@@ -71,7 +73,8 @@ export class Producer extends React.Component<Props, State> {
       <ProducerPage
         createContest={this.createContest}
         onChange={this.handleInputChange}
-        score={this.state.score}/>
+        score={this.state.score}
+        status={this.state.status}/>
     );
   }
 

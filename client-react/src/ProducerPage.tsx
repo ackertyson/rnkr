@@ -5,6 +5,7 @@ export interface Props {
   createContest: ButtonHandler;
   onChange: InputHandler;
   score: Score;
+  status: string;
 }
 
 export function ProducerPage(props: Props) {
@@ -25,6 +26,7 @@ export function ProducerPage(props: Props) {
       <button type="button" onClick={props.createContest}>
         Create contest
       </button>
+      <h4 className="status">{props.status}</h4>
 
       {scores.length > 0 && <div>
         <h2>Scores</h2>
