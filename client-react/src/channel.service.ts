@@ -1,5 +1,5 @@
 import * as Phoenix from 'phoenix';
-const socketHost = 'ws://localhost:4000/socket';
+const socketHost = process.env.REACT_APP_SOCKET_URL || 'ws://localhost:4000/socket';
 
 export class Channel extends Phoenix.Channel {
   // define add'l props on imported type

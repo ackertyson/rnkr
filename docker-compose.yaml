@@ -1,0 +1,51 @@
+version: '2'
+
+services:
+  client:
+    build:
+      context: ./client-react
+    depends_on:
+      - nginx
+      - rnkr
+    environment:
+      - REACT_APP_SOCKET_URL
+    image: rnkr/react-client:latest
+    ports:
+      - '3000:3000'
+
+  db:
+    container_name: elixir-rnkr-db
+    image: postgres:11
+    environment:
+      POSTGRES_DB: rnkr_prod
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - /data/elixir-rnkr:/var/lib/postgresql/data
+
+  nginx:
+    build:
+      context: ./nginx
+    image: rnkr/nginx
+    ports:
+      - '80:80'
+    restart: always
+
+  rnkr:
+    image: rnkr/rnkr:0.0.1
+    container_name: rnkr
+    command: /app/bin/rnkr_interface start
+    depends_on:
+      - db
+      - nginx
+    env_file: .env.production
+    environment:
+      DB_NAME: rnkr_prod
+      DB_USER: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+      DB_HOST: db
+      PHOENIX_HOST: ${PHOENIX_HOST}
+      SECRET_KEY_BASE: ${PHOENIX_SECRET}
+    ports:
+      - '4000:4000'
