@@ -30,7 +30,7 @@ defmodule Rnkr.Voter do
        voter: voter,
        contestants: contestant_names,
        contest_name: contest_name,
-       current_ballot: []
+       ballot: []
      }}
   end
 
@@ -95,13 +95,13 @@ defmodule Rnkr.Voter do
         :get_contestants,
         %{
           contestants: contestants,
-          current_ballot: current_ballot
+          ballot: ballot
         } = data
       ) do
-    {next_ballot, remaining_contestants} = fill_ballot(current_ballot, contestants)
+    {next_ballot, remaining_contestants} = fill_ballot(ballot, contestants)
 
     {:next_state, :voting,
-     %{data | contestants: remaining_contestants, current_ballot: next_ballot},
+     %{data | contestants: remaining_contestants, ballot: next_ballot},
      [{:reply, from, {:ok, next_ballot}}]}
   end
 
@@ -119,20 +119,20 @@ defmodule Rnkr.Voter do
         {:vote, winner},
         %{
           voter: %Voter{votes: votes} = voter,
-          current_ballot: current_ballot
+          ballot: ballot
         } = data
       ) do
-    case Enum.member?(current_ballot, winner) do
+    case Enum.member?(ballot, winner) do
       true ->
         [loser | _] =
-          Enum.filter(current_ballot, fn contestant ->
+          Enum.filter(ballot, fn contestant ->
             contestant != winner
           end)
 
         new_votes = %{votes | winner => votes[winner] + votes[loser] + 1}
         new_voter = %Voter{voter | votes: new_votes}
 
-        {:next_state, :updating_ballot, %{data | voter: new_voter, current_ballot: [winner]},
+        {:next_state, :updating_ballot, %{data | voter: new_voter, ballot: [winner]},
          [{:reply, from, :ok}]}
 
       _ ->
