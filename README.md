@@ -38,6 +38,9 @@ And then in browser...
 3. `cd ..`
 4. `dock -p build client`
 
-### Build Phoenix Release
+### Build/Deploy Phoenix Release
 
-1. `dock -p build rnkr`
+1. `docker build --build-arg DB_NAME=rnkr_prod --build-arg DB_USER=rnkr --build-arg DB_PASSWORD=<db-password> --build-arg DB_PORT=5432 --build-arg PHOENIX_HOST=rnkr.tysonacker.io --build-arg SECRET_KEY_BASE=<phoenix-secret> -t rnkr/rnkr:0.0.1 .`
+2. `dock use rnkr`
+3. `dock -p up -d`
+4. `dock -p exec rnkr /app/bin/rnkr_interface eval "RnkrInterface.Release.migrate"`

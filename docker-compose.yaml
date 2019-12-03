@@ -10,6 +10,7 @@ services:
     image: rnkr/react-client:latest
     ports:
       - '3000:3000'
+    restart: always
 
   db:
     container_name: elixir-rnkr-db
@@ -20,6 +21,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - '5432:5432'
+    restart: always
     volumes:
       - /data/elixir-rnkr:/var/lib/postgresql/data
 
@@ -29,7 +31,10 @@ services:
     image: rnkr/nginx
     ports:
       - '80:80'
+      - '443:443'
     restart: always
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
 
   rnkr:
     image: rnkr/rnkr:0.0.1
@@ -49,3 +54,6 @@ services:
       - SECRET_KEY_BASE
     ports:
       - '4000:4000'
+    restart: always
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt

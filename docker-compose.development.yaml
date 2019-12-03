@@ -12,17 +12,3 @@ services:
       - '${DB_PORT}:5432'
     volumes:
       - ~/.data/elixir-rnkr:/var/lib/postgresql/data
-
-  rnkr:
-    build:
-      context: .
-    image: rnkr/rnkr:0.0.1
-    container_name: rnkr
-    environment:
-      DB_NAME: rnkr_prod
-      DB_USER: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_PORT: ${DB_PORT}
-      DB_HOST: db
-      PHOENIX_HOST: ${PHOENIX_HOST}
-      SECRET_KEY_BASE: ${PHOENIX_SECRET}
