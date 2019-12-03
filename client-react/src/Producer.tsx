@@ -8,6 +8,7 @@ export interface Props {}
 export interface State {
   channel: ChannelService;
   contest: string;
+  contestLink: string;
   score: Score;
   status: string;
   topic: string;
@@ -21,6 +22,7 @@ export class Producer extends React.Component<Props, State> {
     this.state = {
       channel: new ChannelService(),
       contest: '',
+      contestLink: '',
       score: {},
       status: '',
       topic: '',
@@ -59,7 +61,10 @@ export class Producer extends React.Component<Props, State> {
   }
 
   onCreateSuccessFor(name: any): () => void {
-    return () => this.setState({ status: `Created contest '${name}'` });
+    return () => this.setState({
+      contestLink: `/?join=${encodeURIComponent(name)}`,
+      status: `Created contest '${name}'`
+    });
   }
 
   onScoreChange(score: Score): void {
@@ -71,6 +76,7 @@ export class Producer extends React.Component<Props, State> {
   render() {
     return (
       <ProducerPage
+        contestLink={this.state.contestLink}
         createContest={this.createContest}
         onChange={this.handleInputChange}
         score={this.state.score}

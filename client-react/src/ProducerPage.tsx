@@ -2,6 +2,7 @@ import * as React from 'react';
 import { ButtonHandler, InputHandler, Score } from './types';
 
 export interface Props {
+  contestLink: string;
   createContest: ButtonHandler;
   onChange: InputHandler;
   score: Score;
@@ -27,6 +28,7 @@ export function ProducerPage(props: Props) {
         Create contest
       </button>
       <h4 className="status">{props.status}</h4>
+      {props.contestLink && <p><a href={props.contestLink}>Contest link</a></p>}
 
       {scores.length > 0 && <div>
         <h2>Scores</h2>
