@@ -11,9 +11,13 @@ RUN chown -R app:app $HOME
 
 USER app
 WORKDIR $HOME
-RUN npm install --silent --production
-COPY . $HOME/
-RUN npm run build
+
+COPY package.json $HOME
+COPY package-lock.json $HOME
+RUN npm install --production --silent
+
+COPY build $HOME/build
+COPY public $HOME/public
 
 EXPOSE 3000
 CMD [ "serve", "-s", "build", "-l",  "3000" ]

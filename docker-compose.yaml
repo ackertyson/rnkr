@@ -7,8 +7,6 @@ services:
     depends_on:
       - nginx
       - rnkr
-    environment:
-      - REACT_APP_SOCKET_URL
     image: rnkr/react-client:latest
     ports:
       - '3000:3000'
@@ -18,8 +16,10 @@ services:
     image: postgres:11
     environment:
       POSTGRES_DB: rnkr_prod
-      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - '5432:5432'
     volumes:
       - /data/elixir-rnkr:/var/lib/postgresql/data
 
@@ -38,14 +38,14 @@ services:
     depends_on:
       - db
       - nginx
-    env_file: .env.production
     environment:
-      DB_NAME: rnkr_prod
-      DB_USER: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_PORT: ${DB_PORT}
-      DB_HOST: db
-      PHOENIX_HOST: ${PHOENIX_HOST}
-      SECRET_KEY_BASE: ${PHOENIX_SECRET}
+      - DB_NAME=rnkr_prod
+      - DB_USER
+      - DB_PASSWORD
+      - DB_PORT
+      - DB_HOST=db
+      - MIX_ENV=prod
+      - PHOENIX_HOST
+      - SECRET_KEY_BASE
     ports:
       - '4000:4000'

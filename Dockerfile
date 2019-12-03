@@ -1,5 +1,13 @@
 FROM elixir:1.9-alpine as build
 
+ARG DB_NAME
+ARG DB_USER
+ARG DB_PASSWORD
+ARG DB_PORT
+ARG DB_HOST
+ARG PHOENIX_HOST
+ARG SECRET_KEY_BASE
+
 # install build dependencies
 RUN apk add --update git build-base nodejs npm python
 
@@ -20,7 +28,7 @@ COPY rnkr /app/rnkr
 # install mix dependencies
 COPY rnkr_interface/mix.exs rnkr_interface/mix.lock ./
 COPY rnkr_interface/config config
-RUN mix deps.get
+RUN mix deps.get --only prod
 RUN mix deps.compile
 
 # build assets

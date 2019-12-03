@@ -18,17 +18,11 @@ services:
       context: .
     image: rnkr/rnkr:0.0.1
     container_name: rnkr
-    command: /app/bin/rnkr_interface start
-    depends_on:
-      - db
     environment:
-      DB_NAME: rnkr_dev
-      DB_USER: rnkr
-      DB_PASSWORD: letmein
-      DB_PORT: 5432
+      DB_NAME: rnkr_prod
+      DB_USER: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
       DB_HOST: db
-      PHOENIX_HOST: localhost
-      SECRET_KEY_BASE: WAYwxlhuIlr2ydMffb2IWf7ivRE/662dKKo+3jqcojVHe4uhRwTDptf4k9/Kx9RY
-    ports:
-      - '4000:4000'
-      - '8080:80'
+      PHOENIX_HOST: ${PHOENIX_HOST}
+      SECRET_KEY_BASE: ${PHOENIX_SECRET}
