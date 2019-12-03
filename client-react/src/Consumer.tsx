@@ -3,7 +3,9 @@ import ChannelService from './channel.service';
 import ConsumerPage from './ConsumerPage';
 import { ButtonHandler, InputEvent, FormContainer, Score } from './types';
 
-export interface Props {}
+export interface Props {
+  location: any;
+}
 
 export interface State {
   active: boolean;
@@ -20,10 +22,13 @@ export interface State {
 export class Consumer extends React.Component<Props, State> implements FormContainer {
   constructor(props: Props) {
     super(props);
+
+    const { join } = this.parseQueryParams(props);
+
     this.state = {
       active: false,
       channel: new ChannelService(),
-      contest: '',
+      contest: join || '',
       contestants: {},
       score: {},
       status: '',
@@ -80,6 +85,18 @@ export class Consumer extends React.Component<Props, State> implements FormConta
 
   onVotingComplete(): void {
     this.setState({ active: false });
+  }
+
+  parseQueryParams(props: Props) {
+    return props.location.search
+      .slice(1)
+      .split('&')
+      .map((kv: string) => kv.split('='))
+      .reduce((acc: any, val: string[]) => {
+        const [key, value] = val;
+        acc[key] = value;
+        return acc;
+      }, {});
   }
 
   render() {
