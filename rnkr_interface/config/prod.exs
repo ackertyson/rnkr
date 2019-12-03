@@ -10,7 +10,16 @@ use Mix.Config
 # which you should run after static files are built and
 # before starting your production server.
 config :rnkr_interface, RnkrInterfaceWeb.Endpoint,
-  url: [host: System.fetch_env!("PHOENIX_HOST"), port: 80],
+  url: [host: System.fetch_env!("PHOENIX_HOST"), port: 4001],
+  https: [
+    :inet6,
+    port: 4001,
+    cipher_suite: :strong,
+    otp_app: :rnkr_interface,
+    keyfile: "priv/certs/privkey.pem",
+    certfile: "priv/certs/cert.pem"
+  ],
+  force_ssl: [rewrite_on: [:x_forwarded_proto]],
   cache_static_manifest: "priv/static/cache_manifest.json"
 
 # Do not print debug messages in production
