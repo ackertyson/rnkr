@@ -21,6 +21,8 @@ erl_crash.dump
 
 # production
 /build
+client-react/build/
+priv/certs/
 
 # misc
 .DS_Store
