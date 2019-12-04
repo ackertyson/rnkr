@@ -94,7 +94,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       .map((kv: string) => kv.split('='))
       .reduce((acc: any, val: string[]) => {
         const [key, value] = val;
-        acc[key] = value;
+        acc[key] = decodeURIComponent(value);
         return acc;
       }, {});
   }
