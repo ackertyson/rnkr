@@ -34,7 +34,7 @@ And then in browser...
 ### Build React Client
 
 1. `cd client-react`
-2. `REACT_APP_SOCKET_URL=ws://rnkr-api.tysonacker.io/socket npm run build`
+2. `REACT_APP_SOCKET_URL=wss://rnkr-api.tysonacker.io/socket npm run build`
 3. `cd ..`
 4. `dock -p build client`
 

@@ -52,6 +52,4 @@ services:
       - MIX_ENV=prod
       - PHOENIX_HOST
       - SECRET_KEY_BASE
-    ports:
-      - '4001:4001'
     restart: always
