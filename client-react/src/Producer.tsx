@@ -8,6 +8,7 @@ export interface Props {}
 export interface State {
   channel: ChannelService;
   contest: string;
+  contestants: string;
   contestLink: string;
   score: Score;
   status: string;
@@ -22,6 +23,7 @@ export class Producer extends React.Component<Props, State> {
     this.state = {
       channel: new ChannelService(),
       contest: '',
+      contestants: '',
       contestLink: '',
       score: {},
       status: '',
@@ -37,7 +39,9 @@ export class Producer extends React.Component<Props, State> {
   }
 
   createContest(): void {
-    const contestants = ['A', 'B', 'C', 'D'];
+    const contestants = this.state.contestants
+      .split('/')
+      .map(name => name.trim());
     const name = this.state.contest;
     const topic = `contest:moderator:${name}`;
     this.setState({ topic });

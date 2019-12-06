@@ -12,6 +12,7 @@ export interface State {
   channel: ChannelService;
   contest: string;
   contestants: {[key: string]: string};
+  isBusy: boolean;
   score: Score;
   status: string;
   subscriptions: Function[];
@@ -30,6 +31,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
       channel: new ChannelService(),
       contest: join || '',
       contestants: {},
+      isBusy: false,
       score: {},
       status: '',
       subscriptions: [],
@@ -50,9 +52,12 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   }
 
   castVoteFor(name: string): ButtonHandler {
-    return () => this.state.channel.send(
-      this.state.topic, 'cast_vote', { name: name }, this.onCastVoteSuccessFor(name)
-    );
+    return () => {
+      this.setState({ isBusy: true });
+      return this.state.channel.send(
+        this.state.topic, 'cast_vote', { name: name }, this.onCastVoteSuccessFor(name)
+      );
+    }
   }
 
   onCastVoteSuccessFor(name: string): () => void {
@@ -106,6 +111,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
         castVoteFor={this.castVoteFor}
         contest={this.state.contest}
         contestants={this.state.contestants}
+        isBusy={this.state.isBusy}
         joinContest={this.joinContest}
         onChange={this.handleInputChange}
         score={this.state.score}
@@ -115,6 +121,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   }
 
   setContestants(contestants: any) {
+    setTimeout(() => this.setState({ isBusy: false }), 200);
     this.setState({ contestants });
   }
 }

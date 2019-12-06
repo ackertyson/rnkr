@@ -24,6 +24,13 @@ export function ProducerPage(props: Props) {
           name="contest"
           onChange={props.onChange}/>
       </div>
+      <div className="form-group">
+        <label>Contestants (separate with &quot;/&quot;)</label>
+        <input type="text"
+          placeholder="A / B / Third Contestant / D"
+          name="contestants"
+          onChange={props.onChange}/>
+      </div>
       <button type="button" onClick={props.createContest}>
         Create contest
       </button>
