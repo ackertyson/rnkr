@@ -8,8 +8,6 @@ services:
       - nginx
       - rnkr
     image: rnkr/react-client:latest
-    ports:
-      - '3000:3000'
     restart: always
 
   db:
@@ -19,8 +17,6 @@ services:
       POSTGRES_DB: rnkr_prod
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - '5432:5432'
     restart: always
     volumes:
       - /data/elixir-rnkr:/var/lib/postgresql/data

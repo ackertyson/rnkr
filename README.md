@@ -15,14 +15,18 @@ From project root...
 From project root...
 
 1. `cd rnkr_interface`
-2. `iex -S mix phx.server`
+2. `mix deps.get`
+3. `mix ecto.create`
+4. `mix ecto.migrate`
+5. `iex -S mix phx.server`
 
 ### Start React client
 
 From project root...
 
 1. `cd client-react`
-2. `npm start`
+2. `npm install`
+3. `npm start`
 
 And then in browser...
 
