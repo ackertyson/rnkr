@@ -47,12 +47,13 @@ export function ConsumerPage(props: Props) {
         <button type="button" onClick={props.joinContest}>Join</button>
       </div>}
 
-
       {props.active && <div>
         <h2>{props.contest}</h2>
         <h4>Which is better?</h4>
+
         {props.isBusy &&
           <h3 className="spinner">JUST WAIT OKAY</h3>}
+
         {props.isBusy || contestants}
       </div>}
       <h4 className="status">{props.status}</h4>

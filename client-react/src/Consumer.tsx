@@ -121,7 +121,7 @@ export class Consumer extends React.Component<Props, State> implements FormConta
   }
 
   setContestants(contestants: any) {
-    setTimeout(() => this.setState({ isBusy: false }), 200);
+    setTimeout(() => this.setState({ isBusy: false }), 500);
     this.setState({ contestants });
   }
 }

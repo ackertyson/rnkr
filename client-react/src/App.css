@@ -37,7 +37,7 @@
 
 .spinner {
   margin: 5rem;
-  animation: 1s linear 0s App-logo-spin;
+  animation: .5s linear 0s App-logo-spin;
 }
 
 @keyframes App-logo-spin {
